@@ -1,0 +1,35 @@
+--@client
+
+--@include control_rod_selection/crs_material.txt
+
+local ControlRodSelection = {}
+BWR.ControlRodSelection = ControlRodSelection
+
+require( "control_rod_selection/crs_material.txt" )
+
+do
+    local position = chip():localToWorld( Vector( 0, -86, 37.25 ) )
+    local angle = chip():localToWorldAngles( Angle( 11.25, 90, 0 ) )
+    ControlRodSelection.Model = hologram.create( position, angle, "models/hunter/plates/plate1x1.mdl", Vector( 0.5 * 0.9, 0.5 * 0.9, 1 ) )
+    ControlRodSelection.Model:setMaterial( "!" .. ControlRodSelection.TextureMap.Material:getName() )
+    ControlRodSelection.Model:setFilterMag( TEXFILTER.POINT )
+end
+
+local previousRodIndex = 1
+
+local function onControlRodSelected()
+    local rodIndex = net.readUInt( 8 )
+
+    hook.add( "RenderOffScreen", "SetControlRodButtonActive", function()
+        BWR.ControlRodSelection.TextureMap.setControlRodButtonActive( previousRodIndex, false )
+        BWR.ControlRodSelection.TextureMap.setControlRodButtonActive( rodIndex, true )
+
+        previousRodIndex = rodIndex
+
+        hook.remove( "RenderOffScreen", "SetControlRodButtonActive" )
+    end )
+
+    hook.run( "ControlRodSelected", rodIndex )
+end
+
+net.receive( "ControlRodSelected", onControlRodSelected )

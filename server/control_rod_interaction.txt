@@ -1,0 +1,292 @@
+--@server
+
+local floor, clamp = math.floor, math.clamp
+
+ControlRodInteraction = {}
+BWR.ControlRodInteraction = ControlRodInteraction
+
+local CONTROL_ROD_MOVEMENT_RATE = 0.6
+local CONTROL_ROD_MAX_WITHDRAWAL = 42
+
+local CONTROL_ROD_SETTLE_DURATION = 2.4
+
+---@enum ControlRodDirection
+local ControlRodDirection = {
+    NOT_MOVING = 0,
+    INSERT = 1,
+    WITHDRAW = 2,
+    SETTLE = 3
+}
+
+---@class ControlRod
+---@field name string
+---@field insertion number
+
+local controlRodNames = {
+                                        "02-19", "02-23", "02-27", "02-31", "02-35", "02-39", "02-43",
+                               "06-15", "06-19", "06-23", "06-27", "06-31", "06-35", "06-39", "06-43", "06-47",
+                      "10-11", "10-15", "10-19", "10-23", "10-27", "10-31", "10-35", "10-39", "10-43", "10-47", "10-51",
+             "14-07", "14-11", "14-15", "14-19", "14-23", "14-27", "14-31", "14-35", "14-39", "14-43", "14-47", "14-51", "14-55",
+    "18-03", "18-07", "18-11", "18-15", "18-19", "18-23", "18-27", "18-31", "18-35", "18-39", "18-43", "18-47", "18-51", "18-55", "18-59",
+    "22-03", "22-07", "22-11", "22-15", "22-19", "22-23", "22-27", "22-31", "22-35", "22-39", "22-43", "22-47", "22-51", "22-55", "22-59",
+    "26-03", "26-07", "26-11", "26-15", "26-19", "26-23", "26-27", "26-31", "26-35", "26-39", "26-43", "26-47", "26-51", "26-55", "26-59",
+    "30-03", "30-07", "30-11", "30-15", "30-19", "30-23", "30-27", "30-31", "30-35", "30-39", "30-43", "30-47", "30-51", "30-55", "30-59",
+    "34-03", "34-07", "34-11", "34-15", "34-19", "34-23", "34-27", "34-31", "34-35", "34-39", "34-43", "34-47", "34-51", "34-55", "34-59",
+    "38-03", "38-07", "38-11", "38-15", "38-19", "38-23", "38-27", "38-31", "38-35", "38-39", "38-43", "38-47", "38-51", "38-55", "38-59",
+    "42-03", "42-07", "42-11", "42-15", "42-19", "42-23", "42-27", "42-31", "42-35", "42-39", "42-43", "42-47", "42-51", "42-55", "42-59",
+             "46-07", "46-11", "46-15", "46-19", "46-23", "46-27", "46-31", "46-35", "46-39", "46-43", "46-47", "46-51", "46-55",
+                      "50-11", "50-15", "50-19", "50-23", "50-27", "50-31", "50-35", "50-39", "50-43", "50-47", "50-51",
+                               "54-15", "54-19", "54-23", "54-27", "54-31", "54-35", "54-39", "54-43", "54-47",
+                                        "58-19", "58-23", "58-27", "58-31", "58-35", "58-39", "58-43"
+}
+
+local controlRodByName = {}
+
+---@type ControlRod[]
+local controlRods = {}
+
+for i, name in ipairs( controlRodNames ) do
+    controlRodByName[name] = i
+    controlRods[i] = {
+        name = name,
+        insertion = 0,
+    }
+end
+
+local selectedRod = 1
+local controlRodDirection = ControlRodDirection.NOT_MOVING
+local continuousMode = false
+
+function ControlRodInteraction.selectRod( name )
+    local index = controlRodByName[name]
+    if not index then return end
+
+    selectedRod = index
+
+    net.start( "ControlRodSelected" )
+    net.writeUInt( index, 8 )
+    net.send()
+end
+
+function ControlRodInteraction.insertSelectedRod()
+    local rod = controlRods[selectedRod]
+    local insertion = rod.insertion
+
+    if insertion <= 0 then return end
+
+    controlRodDirection = ControlRodDirection.INSERT
+    continuousMode = false
+end
+
+function ControlRodInteraction.withdrawSelectedRod()
+    local rod = controlRods[selectedRod]
+    local insertion = rod.insertion
+
+    if insertion >= CONTROL_ROD_MAX_WITHDRAWAL then return end
+
+    controlRodDirection = ControlRodDirection.WITHDRAW
+    continuousMode = false
+end
+
+function ControlRodInteraction.continuousInsertSelectedRod()
+    local rod = controlRods[selectedRod]
+    local insertion = rod.insertion
+
+    if insertion <= 0 then return end
+
+    controlRodDirection = ControlRodDirection.INSERT
+    continuousMode = true
+end
+
+function ControlRodInteraction.continuousWithdrawSelectedRod()
+    local rod = controlRods[selectedRod]
+    local insertion = rod.insertion
+
+    if insertion >= CONTROL_ROD_MAX_WITHDRAWAL then return end
+
+    controlRodDirection = ControlRodDirection.WITHDRAW
+    continuousMode = true
+end
+
+function ControlRodInteraction.stopContinuousMovement()
+    continuousMode = false
+end
+
+local controlRodPositionGoal
+local settleCompleteTime = 0
+
+local function updateMovingControlRods()
+    if controlRodDirection == ControlRodDirection.NOT_MOVING then return end
+
+    local time = timer.curtime()
+    local rod = controlRods[selectedRod]
+
+    if controlRodDirection == ControlRodDirection.SETTLE then
+        if time >= settleCompleteTime then
+            controlRodDirection = ControlRodDirection.NOT_MOVING
+
+            net.start( "ControlRodSettled" )
+            net.writeUInt( selectedRod, 8 )
+            net.send()
+        end
+
+        return
+    end
+
+    local delta = timer.frametime()
+    local rate = controlRodDirection == ControlRodDirection.INSERT and -1 or 1
+
+    if not controlRodPositionGoal then
+        controlRodPositionGoal = clamp( floor( rod.insertion + rate * 2 ), 0, CONTROL_ROD_MAX_WITHDRAWAL )
+    end
+
+    rate = rate * CONTROL_ROD_MOVEMENT_RATE
+    local newInsertion = clamp( rod.insertion + rate * delta, 0, CONTROL_ROD_MAX_WITHDRAWAL )
+    rod.insertion = newInsertion
+
+    local settle = false
+
+    if controlRodDirection == ControlRodDirection.INSERT and newInsertion <= controlRodPositionGoal then
+        if continuousMode and newInsertion > 0 then
+            controlRodPositionGoal = clamp( floor( rod.insertion ) - 2, 0, CONTROL_ROD_MAX_WITHDRAWAL )
+        else
+            settle = true
+        end
+    elseif controlRodDirection == ControlRodDirection.WITHDRAW and newInsertion >= controlRodPositionGoal then
+        if continuousMode and newInsertion < CONTROL_ROD_MAX_WITHDRAWAL then
+            controlRodPositionGoal = clamp( floor( rod.insertion ) + 2, 0, CONTROL_ROD_MAX_WITHDRAWAL )
+        else
+            settle = true
+        end
+    end
+
+    if settle then
+        rod.insertion = math.round( rod.insertion )
+
+        controlRodDirection = ControlRodDirection.SETTLE
+        settleCompleteTime = time + CONTROL_ROD_SETTLE_DURATION
+
+        controlRodPositionGoal = nil
+
+        net.start( "ControlRodSettling" )
+        net.writeUInt( selectedRod, 8 )
+        net.send()
+    else
+        net.start( "ControlRodMoved" )
+        net.writeUInt( selectedRod, 8 )
+        net.writeFloat( newInsertion )
+        net.send( nil, true )
+    end
+end
+
+hook.add( "Tick", "UpdateMovingControlRods", updateMovingControlRods )
+
+local insertButton
+local withdrawButton
+local continuousInsertButton
+local continuousWithdrawButton
+
+local buttons = {}
+
+local function generateInteractionButtons()
+    local function lVector( x, y, z ) return chip():localToWorld( Vector( x, y, z ) ) end
+    local function lAngle( x, y, z ) return chip():localToWorldAngles( Angle( x, y, z ) ) end
+
+    insertButton = await( prop.createAsync( lVector( -13.25, -79.25, 34.75 ), lAngle( 11.25, 90, 0 ), "models/hunter/plates/plate.mdl", true ) )
+    insertButton:setColor( Color( 255, 255, 255, 0 ) )
+
+    withdrawButton = await( prop.createAsync( lVector( -16.25, -79.25, 34.75 ), lAngle( 11.25, 90, 0 ), "models/hunter/plates/plate.mdl", true ) )
+    withdrawButton:setColor( Color( 255, 255, 255, 0 ) )
+
+    continuousInsertButton = await( prop.createAsync( lVector( 16.25, -79.25, 34.75 ), lAngle( 11.25, 90, 0 ), "models/hunter/plates/plate.mdl", true ) )
+    continuousInsertButton:setColor( Color( 255, 255, 255, 0 ) )
+
+    continuousWithdrawButton = await( prop.createAsync( lVector( 13.25, -79.25, 34.75 ), lAngle( 11.25, 90, 0 ), "models/hunter/plates/plate.mdl", true ) )
+    continuousWithdrawButton:setColor( Color( 255, 255, 255, 0 ) )
+
+    buttons = {
+        {
+            entity = insertButton,
+            pressed = false,
+            player = nil,
+            isContinuous = false
+        },
+        {
+            entity = withdrawButton,
+            pressed = false,
+            player = nil,
+            isContinuous = false
+        },
+        {
+            entity = continuousInsertButton,
+            pressed = false,
+            player = nil,
+            isContinuous = true
+        },
+        {
+            entity = continuousWithdrawButton,
+            pressed = false,
+            player = nil,
+            isContinuous = true
+        }
+    }
+end
+
+async( generateInteractionButtons )()
+
+local function sendButtonStates()
+    net.start( "ControlRodInteractionButtons" )
+
+    local data = 0
+    for i, button in ipairs( buttons ) do
+        data = bit.bor( data, bit.lshift( button.pressed and 1 or 0, i - 1 ) )
+    end
+
+    net.writeUInt( data, 4 )
+    net.send()
+end
+
+local MAX_INTERACTION_DISTANCE = 64^2
+local BUTTON_INTERACTION_POSITION = chip():localToWorld( Vector( -14.75, -79.25, 34.75 ) )
+
+local function onPressInteractionButtons( ply, key )
+    if key ~= IN_KEY.USE then return end
+    local eyeTrace = ply:getEyeTrace()
+    if eyeTrace.StartPos:getDistanceSqr( BUTTON_INTERACTION_POSITION ) > MAX_INTERACTION_DISTANCE then return end
+
+    for _, button in ipairs( buttons ) do
+        if eyeTrace.Entity == button.entity then
+            if button.pressed then return end
+
+            button.pressed = true
+            button.player = ply
+
+            sendButtonStates()
+
+            return
+        end
+    end
+end
+
+hook.add( "KeyPress", "OnPressInteractionButtons", onPressInteractionButtons )
+
+local function onReleaseInteractionButtons( ply, key )
+    if key ~= IN_KEY.USE then return end
+
+    for _, button in ipairs( buttons ) do
+        if button.player == ply then
+            button.pressed = false
+            button.player = nil
+
+            if button.isContinuous then
+                ControlRodInteraction.stopContinuousMovement()
+            end
+
+            sendButtonStates()
+
+            return
+        end
+    end
+end
+
+hook.add( "KeyRelease", "OnReleaseInteractionButtons", onReleaseInteractionButtons )

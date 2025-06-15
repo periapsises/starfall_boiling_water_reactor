@@ -1,0 +1,56 @@
+local lprmGroupColumns = {
+    { column = 6, startsAt = 15, endsAt = 47 },
+    { column = 14, startsAt = 7, endsAt = 55 },
+    { column = 22, startsAt = 7, endsAt = 55 },
+    { column = 30, startsAt = 7, endsAt = 55 },
+    { column = 38, startsAt = 7, endsAt = 55 },
+    { column = 46, startsAt = 7, endsAt = 47 },
+    { column = 54, startsAt = 15, endsAt = 39 },
+}
+
+--- Represents the position as [column, row] of an LPRM group and its corresponding id.
+---@class LPRMGroupPosition
+---@field column number # The column in which the control rod is.
+---@field row number # The row in which the control rod is.
+---@field index number # The index of the control rod.
+local LPRMGroupPosition = {}
+
+--- The minimum value found in columns.
+LPRMGroupPosition.minColumn = 6
+--- The maximum value found in columns.
+LPRMGroupPosition.maxColumn = 54
+--- The minimum value found in rows.
+LPRMGroupPosition.minRow = 7
+--- The maximum value found in rows.
+LPRMGroupPosition.maxRow = 55
+--- The maximum size of a column.
+LPRMGroupPosition.columnSize = ( LPRMGroupPosition.maxColumn - LPRMGroupPosition.minColumn ) / 4 + 1
+--- The maximum size of a row.
+LPRMGroupPosition.rowSize = ( LPRMGroupPosition.maxRow - LPRMGroupPosition.minRow ) / 4 + 1
+
+---@type LPRMGroupPosition[]
+local lprmGroupById = {}
+
+---@type LPRMGroupPosition[][]
+local lprmGroupByPosition = {}
+
+for _, column in ipairs( lprmGroupColumns ) do
+    lprmGroupByPosition[column.column] = {}
+
+    for i = column.startsAt, column.endsAt, 8 do
+        local lprmGroup = {}
+        lprmGroup.column = column.column
+        lprmGroup.row = i
+        lprmGroup.index = #lprmGroupById + 1
+
+        lprmGroupById[lprmGroup.index] = lprmGroup
+        lprmGroupByPosition[column.column][i] = lprmGroup
+    end
+end
+
+--- Lookup table for an LPRM group using its id.
+LPRMGroupPosition.byId = lprmGroupById
+--- Lookup table for an LPRM group using its position.
+LPRMGroupPosition.byPosition = lprmGroupByPosition
+
+BWR.LPRMGroupPosition = LPRMGroupPosition

@@ -1,0 +1,166 @@
+--@client
+
+local FullCoreDisplay = BWR.FullCoreDisplay
+local IndicatorType = FullCoreDisplay.IndicatorType
+local MeshHandle, MeshHandler = BWR.MeshHandle, BWR.MeshHandler
+
+local ControlRodIndicators = {}
+BWR.FullCoreDisplay.ControlRodIndicators = ControlRodIndicators
+
+---@type MeshHandle[]
+local controlRodMeshHandles = {}
+
+---@class ControlRodIndicatorPositioning
+---@field x number
+---@field y number
+---@field xOffset number
+---@field yOffset number
+
+---@type table<string, table<IndicatorType, ControlRodIndicatorPositioning>>
+local indicatorPositioning = {
+    TOP_LEFT = {
+        [IndicatorType.SELECTED]  = { x = 0, y = 0, xOffset = 0, yOffset = 0 },
+        [IndicatorType.FULL_IN]   = { x = 1, y = 0, xOffset = 1, yOffset = 0 },
+        [IndicatorType.FULL_OUT]  = { x = 1, y = 1, xOffset = 1, yOffset = 0 },
+        [IndicatorType.ACCUM]     = { x = 0, y = 2, xOffset = 0, yOffset = 1 },
+        [IndicatorType.DRIFT]     = { x = 0, y = 1, xOffset = 0, yOffset = 0 },
+        [IndicatorType.SCRAM]     = { x = 0, y = 3, xOffset = 0, yOffset = 1 }
+    },
+    TOP_RIGHT = {
+        [IndicatorType.SELECTED]  = { x = 1, y = 0, xOffset = 1, yOffset = 0 },
+        [IndicatorType.FULL_IN]   = { x = 0, y = 0, xOffset = 0, yOffset = 0 },
+        [IndicatorType.FULL_OUT]  = { x = 0, y = 1, xOffset = 0, yOffset = 0 },
+        [IndicatorType.ACCUM]     = { x = 1, y = 2, xOffset = 1, yOffset = 1 },
+        [IndicatorType.DRIFT]     = { x = 1, y = 1, xOffset = 1, yOffset = 0 },
+        [IndicatorType.SCRAM]     = { x = 1, y = 3, xOffset = 1, yOffset = 1 }
+    },
+    BOTTOM_LEFT = {
+        [IndicatorType.SELECTED]  = { x = 0, y = 2, xOffset = 0, yOffset = 1 },
+        [IndicatorType.FULL_IN]   = { x = 1, y = 2, xOffset = 1, yOffset = 1 },
+        [IndicatorType.FULL_OUT]  = { x = 1, y = 3, xOffset = 1, yOffset = 1 },
+        [IndicatorType.ACCUM]     = { x = 0, y = 0, xOffset = 0, yOffset = 0 },
+        [IndicatorType.DRIFT]     = { x = 0, y = 3, xOffset = 0, yOffset = 1 },
+        [IndicatorType.SCRAM]     = { x = 0, y = 1, xOffset = 0, yOffset = 0 }
+    },
+    BOTTOM_RIGHT = {
+        [IndicatorType.SELECTED]  = { x = 1, y = 2, xOffset = 1, yOffset = 1 },
+        [IndicatorType.FULL_IN]   = { x = 0, y = 2, xOffset = 0, yOffset = 1 },
+        [IndicatorType.FULL_OUT]  = { x = 0, y = 3, xOffset = 0, yOffset = 1 },
+        [IndicatorType.ACCUM]     = { x = 1, y = 0, xOffset = 1, yOffset = 0 },
+        [IndicatorType.DRIFT]     = { x = 1, y = 3, xOffset = 1, yOffset = 1 },
+        [IndicatorType.SCRAM]     = { x = 1, y = 1, xOffset = 1, yOffset = 0 }
+    }
+}
+
+local meshHandleMatrix = chip():getMatrix()
+meshHandleMatrix:translate( Vector( 0, -102, 87 ) )
+meshHandleMatrix:rotate( Angle( 180, 0, 90 ) )
+
+--- Adds four vertices to the current group of vertices.
+---@param v1 Vertex3D
+---@param v2 Vertex3D
+---@param v3 Vertex3D
+---@param v4 Vertex3D
+---@return Vertex3D[] # The group of vertices the vertices were added to.
+local function addVertices( v1, v2, v3, v4 )
+    local currentMeshHandle = controlRodMeshHandles[#controlRodMeshHandles]
+    if not currentMeshHandle or #currentMeshHandle.vertices >= FullCoreDisplay.MAX_VERTICES_PER_INDICATOR_GROUP then
+        currentMeshHandle = MeshHandle.new( {}, nil, meshHandleMatrix )
+        table.insert( controlRodMeshHandles, currentMeshHandle )
+        MeshHandler.register( currentMeshHandle )
+    end
+
+    table.insert( currentMeshHandle.vertices, v1 )
+    table.insert( currentMeshHandle.vertices, v2 )
+    table.insert( currentMeshHandle.vertices, v3 )
+    table.insert( currentMeshHandle.vertices, v3 )
+    table.insert( currentMeshHandle.vertices, v4 )
+    table.insert( currentMeshHandle.vertices, v1 )
+
+    return currentMeshHandle
+end
+
+local INDICATOR_WIDTH = FullCoreDisplay.INDICATOR_WIDTH
+local INDICATOR_HEIGHT = FullCoreDisplay.INDICATOR_HEIGHT
+local INDICATOR_SPACING = FullCoreDisplay.INDICATOR_SPACING
+
+---@param vert1 Vertex3D
+---@param vert2 Vertex3D
+---@param vert3 Vertex3D
+---@param vert4 Vertex3D
+---@param positioning ControlRodIndicatorPositioning
+local function setupIndicatorVertexPositions( vert1, vert2, vert3, vert4, positioning, xOffset, yOffset )
+    local xOrigin = FullCoreDisplay.MeshXOffset + xOffset + positioning.x * INDICATOR_WIDTH + positioning.xOffset * INDICATOR_SPACING
+    local yOrigin = FullCoreDisplay.MeshYOffset - yOffset + positioning.y * INDICATOR_HEIGHT + positioning.yOffset * INDICATOR_SPACING
+
+    vert1.pos = Vector( xOrigin, yOrigin, 0 )
+    vert2.pos = Vector( xOrigin + INDICATOR_WIDTH, yOrigin, 0 )
+    vert3.pos = Vector( xOrigin + INDICATOR_WIDTH, yOrigin + INDICATOR_HEIGHT, 0 )
+    vert4.pos = Vector( xOrigin, yOrigin + INDICATOR_HEIGHT, 0 )
+end
+
+--- Represents the different indicators for a control rod.
+---@class ControlRodIndicators
+---@field position ControlRodPosition # The position of the control rod.
+---@field indicators table<IndicatorType, Indicator> # The indicators for the control rod.
+
+---@type ControlRodIndicators[]
+ControlRodIndicators.allIndicators = {}
+
+for _, controlRodPosition in ipairs( BWR.ControlRodPosition.byId ) do
+    local controlRodIndicators = {}
+    controlRodIndicators.position = controlRodPosition
+    controlRodIndicators.indicators = {}
+
+    local indicatorsOffsetX = ( controlRodPosition.column - 2 ) * ( INDICATOR_WIDTH + INDICATOR_SPACING ) * 0.5
+    local indicatorsOffsetY = ( controlRodPosition.row - 3 ) * ( INDICATOR_WIDTH + INDICATOR_SPACING ) * 0.5
+
+    local horizontalPositioning = ( controlRodPosition.column - 2 ) / 4 % 2 == 0
+    local verticalPositioning = ( controlRodPosition.row - 3 ) / 4 % 2 == 0
+    local positioningType = ( verticalPositioning and "TOP" or "BOTTOM" ) .. "_" .. ( horizontalPositioning and "RIGHT" or "LEFT" )
+    local positioning = indicatorPositioning[positioningType]
+
+    for indicatorType = 1, 6 do
+        local vertex1 = {}
+        local vertex2 = {}
+        local vertex3 = {}
+        local vertex4 = {}
+
+        setupIndicatorVertexPositions( vertex1, vertex2, vertex3, vertex4, positioning[indicatorType], indicatorsOffsetX, indicatorsOffsetY )
+        local meshHandle = addVertices( vertex1, vertex2, vertex3, vertex4 )
+
+        local indicator = {}
+        indicator.vertices = { vertex1, vertex2, vertex3, vertex4 }
+        indicator.handle = meshHandle
+        indicator.type = indicatorType
+
+        controlRodIndicators.indicators[indicatorType] = indicator
+    end
+
+    table.insert( ControlRodIndicators.allIndicators, controlRodIndicators )
+end
+
+local function populateIndicatorUVs( textureMap )
+    local selectedIndicatorUVs = textureMap.SelectedIndicatorUVs
+    local otherIndicatorUVs = textureMap.OtherIndicatorUVs
+
+    for index, controlRodIndicators in ipairs( ControlRodIndicators.allIndicators ) do
+        local selectedIndicator = controlRodIndicators.indicators[IndicatorType.SELECTED]
+        selectedIndicator.activeUV = selectedIndicatorUVs[index][true]
+        selectedIndicator.inactiveUV = selectedIndicatorUVs[index][false]
+        FullCoreDisplay.setIndicatorActive( selectedIndicator, false )
+
+        for indicatorType = 2, 6 do
+            local indicator = controlRodIndicators.indicators[indicatorType]
+            indicator.activeUV = otherIndicatorUVs[indicatorType][true]
+            indicator.inactiveUV = otherIndicatorUVs[indicatorType][false]
+            FullCoreDisplay.setIndicatorActive( indicator, indicatorType == IndicatorType.FULL_IN )
+        end
+    end
+
+    for _, meshHandle in ipairs( controlRodMeshHandles ) do
+        meshHandle.material = textureMap.Material
+    end
+end
+
+hook.add( "FullCoreDisplayMaterialInitialized", "PopulateControlRodIndicatorUVs", populateIndicatorUVs )

@@ -1,0 +1,64 @@
+local controlRodColumns = {
+    { column = 2,  startsAt = 19, endsAt = 43 },
+    { column = 6,  startsAt = 15, endsAt = 47 },
+    { column = 10, startsAt = 11, endsAt = 51 },
+    { column = 14, startsAt = 7,  endsAt = 55 },
+    { column = 18, startsAt = 3,  endsAt = 59 },
+    { column = 22, startsAt = 3,  endsAt = 59 },
+    { column = 26, startsAt = 3,  endsAt = 59 },
+    { column = 30, startsAt = 3,  endsAt = 59 },
+    { column = 34, startsAt = 3,  endsAt = 59 },
+    { column = 38, startsAt = 3,  endsAt = 59 },
+    { column = 42, startsAt = 3,  endsAt = 59 },
+    { column = 46, startsAt = 7,  endsAt = 55 },
+    { column = 50, startsAt = 11, endsAt = 51 },
+    { column = 54, startsAt = 15, endsAt = 47 },
+    { column = 58, startsAt = 19, endsAt = 43 }
+}
+
+--- Represents the position as [column, row] of a control rod and its corresponding id.
+---@class ControlRodPosition
+---@field column number # The column in which the control rod is.
+---@field row number # The row in which the control rod is.
+---@field index number # The index of the control rod.
+local ControlRodPosition = {}
+
+--- The minimum value found in columns.
+ControlRodPosition.minColumn = 2
+--- The maximum value found in columns.
+ControlRodPosition.maxColumn = 58
+--- The minimum value found in rows.
+ControlRodPosition.minRow = 3
+--- The maximum value found in rows.
+ControlRodPosition.maxRow = 59
+--- The maximum size of a column.
+ControlRodPosition.columnSize = ( ControlRodPosition.maxColumn - ControlRodPosition.minColumn ) / 4 + 1
+--- The maximum size of a row.
+ControlRodPosition.rowSize = ( ControlRodPosition.maxRow - ControlRodPosition.minRow ) / 4 + 1
+
+---@type ControlRodPosition[]
+local controlRodById = {}
+
+---@type ControlRodPosition[][]
+local controlRodByPosition = {}
+
+for _, column in ipairs( controlRodColumns ) do
+    controlRodByPosition[column.column] = {}
+
+    for i = column.startsAt, column.endsAt, 4 do
+        local controlRod = {}
+        controlRod.column = column.column
+        controlRod.row = i
+        controlRod.index = #controlRodById + 1
+
+        controlRodById[controlRod.index] = controlRod
+        controlRodByPosition[column.column][i] = controlRod
+    end
+end
+
+--- Lookup table for a control rod using its id.
+ControlRodPosition.byId = controlRodById
+--- Lookup table for a control rod using its position.
+ControlRodPosition.byPosition = controlRodByPosition
+
+BWR.ControlRodPosition = ControlRodPosition

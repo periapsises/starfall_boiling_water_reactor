@@ -1,0 +1,37 @@
+--- Handles registering and keeping track of all [MeshHandles](lua://MeshHandle).
+local MeshHandler = {}
+
+---@type MeshHandle[]
+MeshHandler.handles = {}
+MeshHandler.nextHandleIndex = 1
+
+--- Registers a new [MeshHandle](lua://MeshHandle).
+---@param meshHandle MeshHandle # The mesh handle.
+function MeshHandler.register( meshHandle )
+    table.insert( MeshHandler.handles, meshHandle )
+end
+
+--- Updates the next handle in queue if it is marked to be rebuilt.
+function MeshHandler.updateHandles()
+    local currentIndex = MeshHandler.nextHandleIndex
+    if not MeshHandler.handles[currentIndex] then return end
+
+    MeshHandler.handles[currentIndex]:rebuild()
+
+    MeshHandler.nextHandleIndex = currentIndex + 1
+    if currentIndex + 1 > #MeshHandler.handles then
+        MeshHandler.nextHandleIndex = 1
+    end
+end
+
+--- Draws all registered handles.
+function MeshHandler.drawHandles()
+    for _, handle in ipairs( MeshHandler.handles ) do
+        render.pushMatrix( handle.matrix )
+        render.setMaterial( handle.material )
+        handle.mesh:draw()
+        render.popMatrix()
+    end
+end
+
+BWR.MeshHandler = MeshHandler

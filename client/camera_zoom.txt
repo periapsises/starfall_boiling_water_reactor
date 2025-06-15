@@ -1,0 +1,32 @@
+local zoomActive = false
+local zoomToggleTime = 0
+local zoomTargetFov = 30
+
+local function editCameraZoom( origin, angles, fov, znear, zfar )
+    local deltaTime = timer.realtime() - zoomToggleTime
+
+    if zoomActive then
+        fov = math.lerp( deltaTime * 10, fov, zoomTargetFov )
+    else
+        fov = math.lerp( deltaTime * 10, zoomTargetFov, fov )
+    end
+
+    return {
+        origin = origin,
+        angles = angles,
+        fov = math.clamp( fov, 10, 100 ),
+        znear = znear,
+        zfar = zfar,
+    }
+end
+
+hook.add( "CalcView", "EditCameraZoom", editCameraZoom )
+
+local function onZoomKeyPress( key, pressed )
+    if key ~= KEY.G then return end
+
+    zoomActive = not zoomActive
+    zoomToggleTime = timer.realtime()
+end
+
+hook.add( "InputPressed", "OnZoomKeyPress", function( key ) onZoomKeyPress( key, true ) end )

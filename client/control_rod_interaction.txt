@@ -1,0 +1,79 @@
+--@client
+
+local buttonColorOff = Color( 180, 132, 65, 255 )
+local buttonColorOn = Color( 210, 152, 75, 255 )
+
+local indicatorColorOff = Color( 141, 141, 141, 255 )
+local indicatorColorOn = Color( 155, 155, 155, 255 )
+
+local function lVector( x, y, z ) return chip():localToWorld( Vector( x, y, z ) ) end
+local function lAngle( x, y, z ) return chip():localToWorldAngles( Angle( x, y, z ) ) end
+
+-- Buttons
+local insertButtonModel = hologram.create( lVector( -13.25, -79.25, 34.75 ), lAngle( 11.25, 90, 0 ), "models/hunter/plates/plate.mdl", Vector( 0.6, 0.6, 1 ) )
+if not insertButtonModel then error( "Failed to create insert button model" ) end
+insertButtonModel:setMaterial( "models/debug/debugwhite" )
+insertButtonModel:suppressEngineLighting( true )
+insertButtonModel:setColor( buttonColorOff )
+
+local withdrawButtonModel = hologram.create( lVector( -16.25, -79.25, 34.75 ), lAngle( 11.25, 90, 0 ), "models/hunter/plates/plate.mdl", Vector( 0.6, 0.6, 1 ) )
+if not withdrawButtonModel then error( "Failed to create withdraw button model" ) end
+withdrawButtonModel:setMaterial( "models/debug/debugwhite" )
+withdrawButtonModel:suppressEngineLighting( true )
+withdrawButtonModel:setColor( buttonColorOff )
+
+local continuousInsertButtonModel = hologram.create( lVector( 16.25, -79.25, 34.75 ), lAngle( 11.25, 90, 0 ), "models/hunter/plates/plate.mdl", Vector( 0.6, 0.6, 1 ) )
+if not continuousInsertButtonModel then error( "Failed to create continuous insert button model" ) end
+continuousInsertButtonModel:setMaterial( "models/debug/debugwhite" )
+continuousInsertButtonModel:suppressEngineLighting( true )
+continuousInsertButtonModel:setColor( buttonColorOff )
+
+local continuousWithdrawButtonModel = hologram.create( lVector( 13.25, -79.25, 34.75 ), lAngle( 11.25, 90, 0 ), "models/hunter/plates/plate.mdl", Vector( 0.6, 0.6, 1 ) )
+if not continuousWithdrawButtonModel then error( "Failed to create continuous withdraw button model" ) end
+continuousWithdrawButtonModel:setMaterial( "models/debug/debugwhite" )
+continuousWithdrawButtonModel:suppressEngineLighting( true )
+continuousWithdrawButtonModel:setColor( buttonColorOff )
+
+-- Indicators
+local insertIndicatorModel = hologram.create( lVector( -13.25, -82.25, 35.5 ), lAngle( 11.25, 90, 0 ), "models/hunter/plates/plate.mdl", Vector( 0.6, 0.6, 1 ) )
+if not insertIndicatorModel then error( "Failed to create insert indicator model" ) end
+insertIndicatorModel:setMaterial( "models/debug/debugwhite" )
+insertIndicatorModel:suppressEngineLighting( true )
+insertIndicatorModel:setColor( indicatorColorOff )
+
+local withdrawIndicatorModel = hologram.create( lVector( -16.25, -82.25, 35.5 ), lAngle( 11.25, 90, 0 ), "models/hunter/plates/plate.mdl", Vector( 0.6, 0.6, 1 ) )
+if not withdrawIndicatorModel then error( "Failed to create withdraw indicator model" ) end
+withdrawIndicatorModel:setMaterial( "models/debug/debugwhite" )
+withdrawIndicatorModel:suppressEngineLighting( true )
+withdrawIndicatorModel:setColor( indicatorColorOff )
+
+local continuousInsertIndicatorModel = hologram.create( lVector( 16.25, -82.25, 35.5 ), lAngle( 11.25, 90, 0 ), "models/hunter/plates/plate.mdl", Vector( 0.6, 0.6, 1 ) )
+if not continuousInsertIndicatorModel then error( "Failed to create continuous insert indicator model" ) end
+continuousInsertIndicatorModel:setMaterial( "models/debug/debugwhite" )
+continuousInsertIndicatorModel:suppressEngineLighting( true )
+continuousInsertIndicatorModel:setColor( indicatorColorOff )
+
+local continuousWithdrawIndicatorModel = hologram.create( lVector( 13.25, -82.25, 35.5 ), lAngle( 11.25, 90, 0 ), "models/hunter/plates/plate.mdl", Vector( 0.6, 0.6, 1 ) )
+if not continuousWithdrawIndicatorModel then error( "Failed to create continuous withdraw indicator model" ) end
+continuousWithdrawIndicatorModel:setMaterial( "models/debug/debugwhite" )
+continuousWithdrawIndicatorModel:suppressEngineLighting( true )
+continuousWithdrawIndicatorModel:setColor( indicatorColorOff )
+
+local buttons = {
+    insertButtonModel,
+    withdrawButtonModel,
+    continuousInsertButtonModel,
+    continuousWithdrawButtonModel
+}
+
+local function updateButtonStates()
+    local data = net.readUInt( 4 )
+    for i = 1, 4 do
+        local button = buttons[i]
+        local pressed = bit.band( data, bit.lshift( 1, i - 1 ) ) ~= 0
+
+        button:setColor( pressed and buttonColorOn or buttonColorOff )
+    end
+end
+
+net.receive( "ControlRodInteractionButtons", updateButtonStates )

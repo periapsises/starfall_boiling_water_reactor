@@ -1,0 +1,87 @@
+--@name BWR Simulator
+--@author Periapsis
+--@shared
+
+--@include libs/ultisetup.txt
+
+--@include server/control_rod_selection.txt
+--@include server/control_rod_interaction.txt
+
+--@include shared/control_rod_position.txt
+--@include shared/lprm_group_position.txt
+
+--@include client/camera_zoom.txt
+--@include client/base_mesh.txt
+--@include client/mesh_handle.txt
+--@include client/mesh_handler.txt
+--@include client/full_core_display.txt
+--@include client/control_rod_selection.txt
+--@include client/control_rod_interaction.txt
+
+BWR = {}
+
+local ultisetup = require( "libs/ultisetup.txt" )
+
+require( "shared/control_rod_position.txt" )
+require( "shared/lprm_group_position.txt" )
+
+if SERVER then
+    do -- HUD Component initialization
+        local hudPosition = chip():localToWorld( Vector( 0, 12, 0 ) )
+        local hudAngle = chip():localToWorldAngles( Angle() )
+        local hudModel = "models/bull/dynamicbuttonsf.mdl"
+
+        local hud = prop.createComponent( hudPosition, hudAngle, "starfall_hud", hudModel, true )
+        hud:linkComponent( chip() )
+        hud:doNotDuplicate()
+    end
+
+    require( "bwr_simulator/server/control_rod_selection.txt" )
+    require( "bwr_simulator/server/control_rod_interaction.txt" )
+end
+
+if CLIENT then
+    local permissionHeader = ""
+    local hue = 130
+    for _, char in ipairs( { "B", "W", "R", " ", "S", "i", "m", "u", "l", "a", "t", "o", "r" } ) do
+        if char ~= " " then
+            local color = Color( hue, 0.6, 1 ):hsvToRGB()
+            char = string.format( "<color=%d,%d,%d>%s</color>", color.r, color.g, color.b, char )
+            hue = ( hue + 8 ) % 360
+        end
+
+        permissionHeader = permissionHeader .. char
+    end
+
+    local permissionDescription = "<font=DermaLarge>" .. permissionHeader .. "</font>"
+    local permissionList = { "http.get", "file.exists", "file.read", "file.write", "material.create" }
+
+    local function init()
+        await( ultisetup.setupPermissionsAsync( permissionList, permissionDescription ) )
+        if player() ~= owner() then await( ultisetup.setupGithubDownload( "periapsises", "starfall-bwr", "content", "bwr-simulator" ) ) end
+
+        require( "client/camera_zoom.txt" )
+        require( "client/base_mesh.txt" )
+        require( "client/mesh_handle.txt" )
+        require( "client/mesh_handler.txt" )
+        require( "client/full_core_display.txt" )
+        require( "client/control_rod_selection.txt" )
+        require( "client/control_rod_interaction.txt" )
+        
+        ---@type PostDrawOpaqueRenderables
+        local function drawMeshes( drawDepth, drawSkybox, draw2DSkybox )
+            if drawSkybox or draw2DSkybox then return end
+
+            render.enableDepth( true )
+            render.setFilterMag( TEXFILTER.POINT )
+            BWR.MeshHandler.updateHandles()
+            BWR.MeshHandler.drawHandles()
+        end
+
+        hook.add( "PostDrawOpaqueRenderables", "DrawMeshes", drawMeshes )
+    end
+
+    async( init )()
+
+    if player() == owner() then enableHud( player(), true ) end
+end

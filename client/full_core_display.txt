@@ -1,0 +1,88 @@
+--@client
+
+--@include full_core_display/fcd_control_rod_indicators.txt
+--@include full_core_display/fcd_lprm_indicators.txt
+--@include full_core_display/fcd_material.txt
+
+local FullCoreDisplay = {}
+BWR.FullCoreDisplay = FullCoreDisplay
+
+---@enum IndicatorType
+FullCoreDisplay.IndicatorType = {
+    SELECTED  = 1,
+    FULL_IN   = 2,
+    FULL_OUT  = 3,
+    ACCUM     = 4,
+    DRIFT     = 5,
+    SCRAM     = 6,
+    LPRM_A_DOWN         = 7,
+    LPRM_B_DOWN         = 8,
+    LPRM_C_DOWN         = 9,
+    LPRM_D_DOWN         = 10,
+    LPRM_A_UP           = 11,
+    LPRM_B_UP           = 12,
+    LPRM_C_UP           = 13,
+    LPRM_D_UP           = 14
+}
+
+FullCoreDisplay.INDICATOR_WIDTH = 0.96
+FullCoreDisplay.INDICATOR_HEIGHT = 0.48
+FullCoreDisplay.INDICATOR_SPACING = 0.06
+
+local VERTICES_PER_INDICATOR = 4
+local INDICATORS_PER_ROD = 6
+local INDICATORS_PER_LPRM = 8
+
+FullCoreDisplay.MAX_VERTICES_PER_INDICATOR_GROUP = 40 * VERTICES_PER_INDICATOR * INDICATORS_PER_ROD
+FullCoreDisplay.MAX_VERTICES_PER_LPRM_GROUP = 40 * VERTICES_PER_INDICATOR * INDICATORS_PER_LPRM
+
+local controlRodRowSize = BWR.ControlRodPosition.rowSize
+local controlRodColumnSize = BWR.ControlRodPosition.columnSize
+
+FullCoreDisplay.MeshXOffset = FullCoreDisplay.INDICATOR_SPACING / 2 - controlRodRowSize * ( FullCoreDisplay.INDICATOR_WIDTH * 2 + FullCoreDisplay.INDICATOR_SPACING * 2 ) / 2
+FullCoreDisplay.MeshYOffset = FullCoreDisplay.INDICATOR_SPACING / 2 + controlRodColumnSize * ( FullCoreDisplay.INDICATOR_HEIGHT * 4 + FullCoreDisplay.INDICATOR_SPACING * 2 ) / 2
+
+---@class Indicator
+---@field vertices Vertex3D[] # The four vertices of the indicator.
+---@field handle MeshHandle # The group of vertices the indicator belongs to.
+---@field type IndicatorType # The type of the indicator.
+---@field active boolean # Whether the indicator is active.
+---@field inactiveUV UVMap # The UV coordinates for the inactive state.
+---@field activeUV UVMap # The UV coordinates for the active state.
+
+---@param indicator Indicator
+---@param active boolean
+function FullCoreDisplay.setIndicatorActive( indicator, active )
+    if indicator.active == active then return end
+    indicator.active = active
+
+    local uv = active and indicator.activeUV or indicator.inactiveUV
+    local vertices = indicator.vertices
+
+    vertices[1].u, vertices[1].v = uv.u1, uv.v1
+    vertices[2].u, vertices[2].v = uv.u2, uv.v1
+    vertices[3].u, vertices[3].v = uv.u2, uv.v2
+    vertices[4].u, vertices[4].v = uv.u1, uv.v2
+
+    indicator.handle.needsRebuilt = true
+end
+
+require( "full_core_display/fcd_control_rod_indicators.txt" )
+require( "full_core_display/fcd_lprm_indicators.txt" )
+require( "full_core_display/fcd_material.txt" )
+
+local currentControlRodIndex = 1
+
+local function onControlRodSelected( rodIndex )
+    if currentControlRodIndex == rodIndex then return end
+
+    local previousControlRodIndicator = BWR.FullCoreDisplay.ControlRodIndicators.allIndicators[currentControlRodIndex]
+    FullCoreDisplay.setIndicatorActive( previousControlRodIndicator.indicators[FullCoreDisplay.IndicatorType.SELECTED], false )
+
+    local controlRodIndicator = BWR.FullCoreDisplay.ControlRodIndicators.allIndicators[rodIndex]
+    FullCoreDisplay.setIndicatorActive( controlRodIndicator.indicators[FullCoreDisplay.IndicatorType.SELECTED], true )
+
+    currentControlRodIndex = rodIndex
+end
+
+hook.add( "ControlRodSelected", "OnControlRodSelected", onControlRodSelected )

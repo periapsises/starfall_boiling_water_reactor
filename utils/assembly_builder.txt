@@ -1,0 +1,191 @@
+--@name Reactor Assembly Builder
+--@author Periapsis
+--@client
+
+--[[
+    WARNING: This script is not meant to be included!
+    It is meant to generate data required for the actual simulation.
+]]
+
+local sqr = string.utf8char( 0x00B2 )
+local printf = function( ... ) print( string.format( ... ) ) end
+
+---@diagnostic disable: lowercase-global
+a = 0.2032    -- Thickness of the straight portion of the channel
+b = 13.40612  -- Distance between each wall of the channel
+c = 0.9652    -- Thickness of the curved portion of the channel
+d = 0.08128   -- Fuel cladding thickness
+e = 1.22682   -- Fuel cladding outer diameter
+f = 1.06426   -- Fuel cladding iner diameter
+g = 1.0414    -- Fuel pellet diameter
+h = 1.50114   -- Water tube outer diameter
+i = 1.34874   -- Water tube inner diameter
+j = 4.0132    -- Distance between the center part of the control rod
+k = 12.3825   -- Distance from the center of the control rod to the tip of the blades
+l = 0.6604    -- Thickness of the control rod blades
+m = 1.6256    -- Distance between the centers of fuel rods
+n = 0.39878   -- Gap between the fuel rods
+o = 0.40132   -- Gap between the channel and fuel rods
+p = 0.26162   -- Gap between the fuel and water rods
+q = 0.71374   -- Distance between the channel and center of the control rod
+r = 0.71374   -- Distance between the channel and the exterior of the assembly
+s = 30.48     -- Size of the assembly
+t = 2.8575    -- ???
+
+--------------------------------------------------
+-- Formulas
+
+local totalArea = s * s
+print( "--------------------------------------------------" )
+printf( "Assembly size: %.2fx%.2f cm", s, s )
+printf( "Total area: %.2f cm%s", totalArea, sqr )
+print( " " )
+
+local controlRodBladeArea = ( k - j / 2 ) * l - ( ( l * l ) - ( math.pi * ( l / 2 ) ^ 2 ) ) / 2
+local controlRodHolderArea = ( j * j ) - ( math.pi * ( ( j - l ) / 2 ) ^ 2 )
+local controlRodTotalArea = controlRodHolderArea + controlRodBladeArea * 4
+printf( "Control rod area: %.2f cm%s", controlRodTotalArea, sqr )
+
+local outerChannelCoverArea = ( a * 2 + b ) ^ 2 - ( ( ( a + o ) * 2 + e ) ^ 2 - ( math.pi * ( a + o + e / 2 ) ^ 2 ) )
+local innerChannelCoverArea = b ^ 2 - ( ( o * 2 + e ) ^ 2 - ( math.pi * ( o + e / 2 ) ^ 2 ) )
+local channelArea = outerChannelCoverArea - innerChannelCoverArea
+printf( "Channel area: %.2f cm%s", channelArea, sqr )
+
+local fuelAndTieCladdingCoverArea = 4 * ( 8 * 8 - 2 ) * ( math.pi * ( e / 2 ) ^ 2 )
+local fuelCladdingInnerCoverArea = 4 * ( 8 * 8 - 10 ) * ( math.pi * ( f / 2 ) ^ 2 )
+local waterCladdingCoverArea = 4 * 2 * ( math.pi * ( h / 2 ) ^ 2 )
+local waterCladdingInnerCoverArea = 4 * 2 * ( math.pi * ( i / 2 ) ^ 2 )
+local totalWaterCladdingArea = waterCladdingCoverArea - waterCladdingInnerCoverArea
+local totalCladdingArea = ( fuelAndTieCladdingCoverArea - fuelCladdingInnerCoverArea ) - totalWaterCladdingArea
+printf( "Cladding area: %.2f cm%s", totalCladdingArea, sqr )
+
+local fuelPelletaArea = 4 * ( 8 * 8 - 10 ) * ( math.pi * ( g / 2 ) ^ 2 )
+printf( "Pellet area: %.2f cm%s", fuelPelletaArea, sqr )
+
+local remainingArea = totalArea - controlRodTotalArea - channelArea - totalCladdingArea - fuelPelletaArea
+printf( "Moderator area: %.2f cm%s", remainingArea, sqr )
+print( " " )
+
+local format = [[
+{
+    assemblySize = %f,
+    assemblyArea = %f,
+    controlRodArea = %f,
+    channelArea = %f,
+    claddingArea = %f,
+    pelletArea = %f,
+    moderatorArea = %f
+}
+]]
+
+printf( format, s, totalArea, controlRodTotalArea, channelArea, totalCladdingArea, fuelPelletaArea, remainingArea )
+
+--------------------------------------------------
+-- Rendering
+
+local factor = 1024 / s
+
+for _, letter in ipairs( string.split( "abcdefghijklmnopqrst", "" ) ) do
+---@diagnostic disable-next-line: undefined-global
+    _G[letter] = _G[letter] * factor
+end
+
+local tieRodCoordinates = {
+    [0] = { [2] = true, [5] = true },
+    [2] = { [0] = true, [7] = true },
+    [5] = { [0] = true, [7] = true },
+    [7] = { [2] = true, [5] = true }
+}
+
+render.createRenderTarget( "Preview" )
+local preview = material.create( "UnlitGeneric" )
+preview:setTextureRenderTarget( "$basetexture", "Preview" )
+local previewInitialized = false
+
+local white, black = Color( 255, 255, 255 ), Color( 0, 0, 0 )
+local water = Color( 100, 150, 255 )
+local moderator = Color( 40, 60, 140 )
+local fuel = Color( 50, 60, 50 )
+local controlRod = Color( 140, 110, 110 )
+
+local function drawAssembly()
+    if not previewInitialized then
+        previewInitialized = true
+
+        render.selectRenderTarget( "Preview" )
+
+        render.setColor( moderator )
+        render.drawRect( 0, 0, s, s )
+
+        render.setColor( controlRod )
+        render.drawRect( ( s - j ) / 2, ( s - j ) / 2, j, j )
+
+        local size = j - l
+        local radius = size / 2
+        render.setColor( moderator )
+        render.drawRoundedBox( radius, ( s - l ) / 2 - size, ( s - l ) / 2 - size, size, size )
+        render.drawRoundedBox( radius, ( s + l ) / 2, ( s - l ) / 2 - size, size, size )
+        render.drawRoundedBox( radius, ( s - l ) / 2 - size, ( s + l ) / 2, size, size )
+        render.drawRoundedBox( radius, ( s + l ) / 2, ( s + l ) / 2, size, size )
+
+        render.setColor( controlRod )
+        render.drawRoundedBox( l / 2, ( s - l ) / 2, s / 2 - k, l, k )
+        render.drawRoundedBox( l / 2, ( s - l ) / 2, s / 2, l, k )
+        render.drawRoundedBox( l / 2, s / 2 - k, ( s - l ) / 2, k, l )
+        render.drawRoundedBox( l / 2, s / 2, ( s - l ) / 2, k, l )
+
+        for y = 0, 1 do
+            for x = 0, 1 do
+                local channelXOffset = ( a * 2 + b + q * 2 ) * x + r
+                local channelYOffset = ( a * 2 + b + q * 2 ) * y + r
+
+                render.setColor( white )
+                render.drawRoundedBox( a + o + e / 2, channelXOffset, channelYOffset, a * 2 + b, a * 2 + b )
+                render.setColor( moderator )
+                render.drawRoundedBox( o + e / 2, channelXOffset + a, channelYOffset + a, b, b )
+
+                for ay = 0, 7 do
+                    for ax = 0, 7 do
+                        local tubeXOffset = channelXOffset + a + o + ( e + n ) * ax + e / 2
+                        local tubeYOffset = channelYOffset + a + o + ( e + n ) * ay + e / 2
+
+                        if ax == 3 and ay == 4 or ax == 4 and ay == 3 then
+                            render.setColor( white )
+                            render.drawRoundedBox( h / 2, tubeXOffset - h / 2, tubeYOffset - h / 2, h, h )
+                            render.setColor( water )
+                            render.drawRoundedBox( i / 2, tubeXOffset - i / 2, tubeYOffset - i / 2, i, i )
+                        elseif tieRodCoordinates[ax] and tieRodCoordinates[ax][ay] then
+                            render.setColor( white )
+                            render.drawRoundedBox( e / 2, tubeXOffset - e / 2, tubeYOffset - e / 2, e, e )
+                        else
+                            render.setColor( white )
+                            render.drawRoundedBox( e / 2, tubeXOffset - e / 2, tubeYOffset - e / 2, e, e )
+                            render.setColor( black )
+                            render.drawRoundedBox( f / 2, tubeXOffset - f / 2, tubeYOffset - f / 2, f, f )
+                            render.setColor( fuel )
+                            render.drawRoundedBox( g / 2, tubeXOffset - g / 2, tubeYOffset - g / 2, g, g )
+                        end
+                    end
+                end
+            end
+        end
+
+        render.selectRenderTarget()
+    end
+
+    render.setColor( white )
+    render.setMaterial( preview )
+
+    local subDivisions = 1
+
+    local stepSize = 512 / subDivisions
+    local endStep = 512 - stepSize
+
+    for y = 0, endStep, stepSize do
+        for x = 0, endStep, stepSize do
+            render.drawTexturedRect( x, y, stepSize, stepSize )
+        end
+    end
+end
+
+hook.add( "Render", "DrawAssembly", drawAssembly )

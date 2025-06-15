@@ -1,0 +1,116 @@
+local ControlRodPosition, IndicatorType = BWR.ControlRodPosition, BWR.FullCoreDisplay.IndicatorType
+
+local TextureMap = {}
+BWR.FullCoreDisplay.TextureMap = TextureMap
+
+local INDICATOR_WIDTH = 64
+local INDICATOR_HEIGHT = 32
+
+local COLOR_BLACK = Color( 0, 0, 0 )
+
+---@enum IndicatorColor
+local IndicatorColor = {
+    ACTIVE      = Color( 255, 255, 255 ),
+    INACTIVE    = Color( 180, 184, 192 ),
+    FULL_IN     = Color( 179, 255, 191 ),
+    FULL_OUT    = Color( 255, 179, 179 ),
+    LPRM_ON     = Color( 191, 107, 39 ),
+    LPRM_OFF    = Color( 33, 36, 38 ),
+    ACCUM       = Color( 255, 0, 0 ),
+    DRIFT       = Color( 255, 255, 0 ),
+    SCRAM       = Color( 0, 0, 255 )
+}
+
+render.createRenderTarget( "FullCoreDisplayTexture" )
+
+TextureMap.Material = material.create( "UnlitGeneric" )
+TextureMap.Material:setTextureRenderTarget( "$basetexture", "FullCoreDisplayTexture" )
+
+local xOffset = 0
+local yOffset = 0
+
+--- Creates an indicator on the texture map and generates its UVs.
+---@param text1 string
+---@param text2 string?
+---@param color IndicatorColor
+---@return UVMap
+local function createIndicator( text1, text2, color )
+    render.setColor( color )
+    render.drawRect( xOffset, yOffset, INDICATOR_WIDTH, INDICATOR_HEIGHT )
+
+    render.setColor( COLOR_BLACK )
+
+    if text2 then
+        render.drawSimpleText( xOffset + 32, yOffset + 8, text1, TEXT_ALIGN.CENTER, TEXT_ALIGN.CENTER )
+        render.drawSimpleText( xOffset + 32, yOffset + 24, text2, TEXT_ALIGN.CENTER, TEXT_ALIGN.CENTER )
+    else
+        render.drawSimpleText( xOffset + 32, yOffset + 16, text1, TEXT_ALIGN.CENTER, TEXT_ALIGN.CENTER )
+    end
+
+    local u1 = xOffset / 1024
+    local v1 = yOffset / 1024
+    local u2 = ( xOffset + 64 ) / 1024
+    local v2 = ( yOffset + 32 ) / 1024
+
+    xOffset = xOffset + 64
+    if xOffset >= 1024 then
+        xOffset = 0
+        yOffset = yOffset + 32
+    end
+
+    return { u1 = u1, v1 = v1, u2 = u2, v2 = v2 }
+end
+
+---@type table<number, table<boolean, UVMap>>
+TextureMap.SelectedIndicatorUVs = {}
+
+---@type table<IndicatorType, table<boolean, UVMap>>
+TextureMap.OtherIndicatorUVs = {}
+
+--- Creates two indicators on the texture with the same text and type but an active and inactive color.
+---@param type IndicatorType
+---@param text1 string
+---@param text2 string?
+---@param activeColor IndicatorColor
+---@param inactiveColor IndicatorColor
+local function createDoubleIndicator( type, text1, text2, activeColor, inactiveColor )
+    TextureMap.OtherIndicatorUVs[type] = {}
+    TextureMap.OtherIndicatorUVs[type][false] = createIndicator( text1, text2, inactiveColor )
+    TextureMap.OtherIndicatorUVs[type][true] = createIndicator( text1, text2, activeColor )
+end
+
+local function initializeFullCoreDisplayMaterial()
+    render.selectRenderTarget( "FullCoreDisplayTexture" )
+
+    for index, controlRodPosition in ipairs( ControlRodPosition.byId ) do
+        local name = string.format( "%02d-%02d", controlRodPosition.column, controlRodPosition.row )
+
+        TextureMap.SelectedIndicatorUVs[index] = {}
+        TextureMap.SelectedIndicatorUVs[index][false] = createIndicator( name, nil, IndicatorColor.INACTIVE )
+        TextureMap.SelectedIndicatorUVs[index][true] = createIndicator( name, nil, IndicatorColor.ACTIVE )
+    end
+
+    createDoubleIndicator( IndicatorType.FULL_IN, "FULL", "IN", IndicatorColor.FULL_IN, IndicatorColor.INACTIVE )
+    createDoubleIndicator( IndicatorType.FULL_OUT, "FULL", "OUT", IndicatorColor.FULL_OUT, IndicatorColor.INACTIVE )
+    createDoubleIndicator( IndicatorType.ACCUM, "ACCUM", nil, IndicatorColor.ACCUM, IndicatorColor.INACTIVE )
+    createDoubleIndicator( IndicatorType.DRIFT, "DRIFT", nil, IndicatorColor.DRIFT, IndicatorColor.INACTIVE )
+    createDoubleIndicator( IndicatorType.SCRAM, "SCRAM", nil, IndicatorColor.SCRAM, IndicatorColor.INACTIVE )
+
+    createDoubleIndicator( IndicatorType.LPRM_A_DOWN, "LPRM A", "DOWN", IndicatorColor.LPRM_ON, IndicatorColor.LPRM_OFF )
+    createDoubleIndicator( IndicatorType.LPRM_B_DOWN, "LPRM B", "DOWN", IndicatorColor.LPRM_ON, IndicatorColor.LPRM_OFF )
+    createDoubleIndicator( IndicatorType.LPRM_C_DOWN, "LPRM C", "DOWN", IndicatorColor.LPRM_ON, IndicatorColor.LPRM_OFF )
+    createDoubleIndicator( IndicatorType.LPRM_D_DOWN, "LPRM D", "DOWN", IndicatorColor.LPRM_ON, IndicatorColor.LPRM_OFF )
+
+    createDoubleIndicator( IndicatorType.LPRM_A_UP, "LPRM A", "UP", IndicatorColor.LPRM_ON, IndicatorColor.LPRM_OFF )
+    createDoubleIndicator( IndicatorType.LPRM_B_UP, "LPRM B", "UP", IndicatorColor.LPRM_ON, IndicatorColor.LPRM_OFF )
+    createDoubleIndicator( IndicatorType.LPRM_C_UP, "LPRM C", "UP", IndicatorColor.LPRM_ON, IndicatorColor.LPRM_OFF )
+    createDoubleIndicator( IndicatorType.LPRM_D_UP, "LPRM D", "UP", IndicatorColor.LPRM_ON, IndicatorColor.LPRM_OFF )
+
+    render.selectRenderTarget()
+
+    hook.run( "FullCoreDisplayMaterialInitialized", TextureMap )
+
+    hook.remove( "RenderOffScreen", "InitializeFullCoreDisplayMaterial" )
+end
+
+hook.add( "RenderOffScreen", "InitializeFullCoreDisplayMaterial", initializeFullCoreDisplayMaterial )

@@ -1,0 +1,42 @@
+--- Represents a mesh and its vertices along with keeping track of changes.
+---@class MeshHandle
+---@field mesh Mesh # The actual mesh.
+---@field material Material? # The material to draw the mesh with.
+---@field matrix VMatrix # The matrix to use to draw the mesh.
+---@field vertices Vertex3D[] # The current set of vertices.
+---@field needsRebuilt boolean # If the handle needs to rebuild its mesh.
+---@field private __index MeshHandle
+local MeshHandle = {}
+MeshHandle.__index = MeshHandle
+
+--- Creates a new handle for a dynamic mesh.
+---@param vertices Vertex3D[] # The initial vertices to use.
+---@param material Material?
+---@param matrix VMatrix?
+---@return MeshHandle # The MeshHandle instance.
+function MeshHandle.new( vertices, material, matrix )
+    local meshHandle = setmetatable( {}, MeshHandle )
+    meshHandle.mesh = mesh.createEmpty()
+    meshHandle.vertices = vertices
+    meshHandle.material = material
+    meshHandle.matrix = matrix or Matrix()
+    meshHandle.needsRebuilt = true
+
+    return meshHandle
+end
+
+--- Sets the vertices to be used by the mesh and marks it as needing to be rebuilt.
+---@param vertices Vertex3D[] # The new vertices.
+function MeshHandle:setVertices( vertices )
+    self.vertices = vertices
+    self.needsRebuilt = true
+end
+
+function MeshHandle:rebuild()
+    if not self.needsRebuilt then return end
+
+    self.mesh = mesh.createFromTable( self.vertices )
+    self.needsRebuilt = false
+end
+
+BWR.MeshHandle = MeshHandle

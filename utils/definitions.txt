@@ -1,0 +1,24 @@
+---@meta
+
+---@class (exact) Vertex3D
+---@field pos Vector
+---@field u number
+---@field v number
+
+---@class (exact) UVMap
+---@field u1 number # The top right U coordinate.
+---@field v1 number # The top right V coordinate.
+---@field u2 number # The bottom left U coordinate.
+---@field v2 number # The bottom left V coordinate.
+
+---@class Thread
+
+---@param func fun()
+---@return Thread
+function async( func ) end
+
+---@param thread Thread
+---@return any
+function await( thread ) end
+
+function yield() end

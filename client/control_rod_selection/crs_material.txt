@@ -1,0 +1,71 @@
+local ControlRodPosition = BWR.ControlRodPosition
+
+local TextureMap = {}
+BWR.ControlRodSelection.TextureMap = TextureMap
+
+local SELECTOR_SIZE = 52
+local SELECTOR_SPACING = 16
+
+local COLOR_BLACK = Color( 0, 0, 0 )
+local COLOR_WHITE = Color( 255, 255, 255 )
+local COLOR_SELECTED = COLOR_WHITE
+local COLOR_DESELECTED = Color( 193, 191, 189 )
+local COLOR_TRANSPARENT = Color( 255, 255, 255, 0 )
+
+render.createRenderTarget( "ControlRodSelectionTexture" )
+
+TextureMap.Material = material.create( "UnlitGeneric" )
+TextureMap.Material:setTextureRenderTarget( "$basetexture", "ControlRodSelectionTexture" )
+TextureMap.Material:setInt( "$flags", 256 )
+
+local function initializeControlRodSelectionMaterial()
+    render.selectRenderTarget( "ControlRodSelectionTexture" )
+
+    render.clear( COLOR_TRANSPARENT )
+
+    render.setFont( "ChatFont" )
+
+    for _, controlRodPosition in ipairs( ControlRodPosition.byId ) do
+        local x = ( controlRodPosition.column - ControlRodPosition.minColumn ) / 4 * ( SELECTOR_SPACING + SELECTOR_SIZE ) + SELECTOR_SPACING * 0.5
+        local y = ( controlRodPosition.row - ControlRodPosition.minColumn ) / 4 * ( SELECTOR_SPACING + SELECTOR_SIZE ) - SELECTOR_SPACING * 0.5
+        y = 1024 - y - SELECTOR_SIZE
+
+        render.setColor( COLOR_DESELECTED )
+        render.drawRect( x, y, SELECTOR_SIZE, SELECTOR_SIZE )
+
+        local name = string.format( "%02d-%02d", controlRodPosition.column, controlRodPosition.row )
+
+        render.setColor( COLOR_BLACK )
+        render.drawSimpleText( x + SELECTOR_SIZE / 2, y + SELECTOR_SIZE / 2, name, TEXT_ALIGN.CENTER, TEXT_ALIGN.CENTER )
+    end
+
+    render.selectRenderTarget()
+
+    hook.run( "ControlRodSelectionMaterialInitialized", TextureMap )
+
+    hook.remove( "RenderOffScreen", "InitializeControlRodSelectionMaterial" )
+end
+
+hook.add( "RenderOffScreen", "InitializeControlRodSelectionMaterial", initializeControlRodSelectionMaterial )
+
+function TextureMap.setControlRodButtonActive( id, active )
+    local controlRodPosition = ControlRodPosition.byId[id]
+    if not controlRodPosition then return end
+
+    local x = ( controlRodPosition.column - ControlRodPosition.minColumn ) / 4 * ( SELECTOR_SPACING + SELECTOR_SIZE ) + SELECTOR_SPACING * 0.5
+    local y = ( controlRodPosition.row - ControlRodPosition.minColumn ) / 4 * ( SELECTOR_SPACING + SELECTOR_SIZE ) - SELECTOR_SPACING * 0.5
+    y = 1024 - y - SELECTOR_SIZE
+
+    render.selectRenderTarget( "ControlRodSelectionTexture" )
+
+    render.setColor( active and COLOR_SELECTED or COLOR_DESELECTED )
+    render.drawRect( x, y, SELECTOR_SIZE, SELECTOR_SIZE )
+
+    local name = string.format( "%02d-%02d", controlRodPosition.column, controlRodPosition.row )
+
+    render.setFont( "ChatFont" )
+    render.setColor( COLOR_BLACK )
+    render.drawSimpleText( x + SELECTOR_SIZE / 2, y + SELECTOR_SIZE / 2, name, TEXT_ALIGN.CENTER, TEXT_ALIGN.CENTER )
+
+    render.selectRenderTarget()
+end
