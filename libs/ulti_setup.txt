@@ -25,6 +25,11 @@ if CLIENT then
         while not hasAllPermissions() do yield() end
     end
 
+    --- Installs or updates content from a GitHub repository.
+    ---@param owner string The owner of the repository.
+    ---@param repo string The name of the repository.
+    ---@param branch string The branch to download from.
+    ---@param path string The path to download the content to.
     local function setupGithubDownload( owner, repo, branch, path )
         assert( isstring( owner ), "Bad argument #1 'owner' to 'setupGithubDownload': Expected string, got " .. type( owner ) )
         assert( isstring( repo ), "Bad argument #2 'repo' to 'setupGithubDownload': Expected string, got " .. type( repo ) )

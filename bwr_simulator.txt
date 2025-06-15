@@ -58,7 +58,7 @@ if CLIENT then
 
     local function init()
         await( ultisetup.setupPermissionsAsync( permissionList, permissionDescription ) )
-        if player() ~= owner() then await( ultisetup.setupGithubDownload( "periapsises", "starfall-bwr", "content", "bwr-simulator" ) ) end
+        await( ultisetup.setupGithubDownload( "periapsises", "starfall_boiling_water_reactor", "content", "boiling_water_reactor" ) )
 
         require( "client/camera_zoom.txt" )
         require( "client/base_mesh.txt" )
@@ -83,5 +83,7 @@ if CLIENT then
 
     async( init )()
 
-    if player() == owner() then enableHud( player(), true ) end
+    if player() == owner() then
+        enableHud( player(), true )
+    end
 end
