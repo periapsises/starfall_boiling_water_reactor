@@ -1,0 +1,295 @@
+--@name OBJ Parser
+--@author Periapsis
+--@shared
+
+---@class MeshVertex
+---@field pos Vector # The vertex position.
+---@field normal Vector? # The triangle normal required for lighting.
+---@field u number? # The U coordinate of the texture.
+---@field v number? # The V coordinate of the texture.
+---@field color Color? # The vertex color.
+---@field u1 number? # The secondary U texture coordinate. Only works when passed to IMesh:BuildFromTriangles, useful for `LightmappedGeneric` shader.
+---@field v1 number? # The secondary V texture coordinate. Only works when passed to IMesh:BuildFromTriangles, useful for `LightmappedGeneric` shader.
+---@field tangent Vector? # The triangle's tangent. Not used by the `VertexLitGeneric` shader.
+---@field binormal Vector? # The triangle's binormal. Not used by the `VertexLitGeneric` shader.
+---@field userdata table? # A table of four numbers. This is used by most shaders in Source to hold tangent information of the vertex (tangentX, tangentY, tangentZ, tangentHeadedness).
+
+---@class TextureCoordinate
+---@field u number
+---@field v number
+
+---@alias FaceData MeshVertex[]
+
+---@class MeshData
+---@field faces FaceData[]
+---@field vertexPositions Vector[]
+---@field vertexNormals Vector[]
+---@field vertexTexCoords Vector2[]
+local MeshData = {}
+MeshData.__index = MeshData
+
+local VERTEX_MIRROR = Vector( -1, 1, 1 )
+local NORMAL_MIRROR = Vector( -1, -1, -1 )
+
+--- Builds a mesh from the parsed data.
+---@param mirrored boolean? # Whether to mirror the mesh.
+---@return Mesh # The built mesh.
+function MeshData:buildMesh( mirrored )
+    ---@type MeshVertex[]
+    local meshVertices = {}
+
+    for _, face in ipairs( self.faces ) do
+        if mirrored then
+            for i = 1, #face do
+                local meshVertex = face[i]
+                meshVertex.pos = meshVertex.pos * VERTEX_MIRROR
+                meshVertex.normal = meshVertex.normal * NORMAL_MIRROR
+                table.insert( meshVertices, meshVertex )
+            end
+        else
+            for i = #face, 1, -1 do
+                table.insert( meshVertices, face[i] )
+            end
+        end
+    end
+
+    return mesh.createFromTable( meshVertices )
+end
+
+--- Builds meshes from the parsed data using the maximum amount of triangles.
+---@return Mesh # The built mesh.
+function MeshData:buildMeshes()
+    local meshes = {}
+    local currentVertices = {}
+    
+    for _, face in ipairs( self.faces ) do
+        local vertexCount = #face
+        
+        if #currentVertices + vertexCount > 65535 then
+            table.insert( meshes, mesh.createFromTable( currentVertices ) )
+            currentVertices = {}
+        end
+        
+        for i = #face, 1, -1 do
+            table.insert( currentVertices, face[i] )
+        end
+    end
+    
+    table.insert( meshes, mesh.createFromTable( currentVertices ) )
+    
+    return meshes
+end
+
+local function meshData_buildMeshesAsync( self, quotaPercent )
+    local meshes = {}
+    local currentVertices = {}
+    
+    for _, face in ipairs( self.faces ) do
+        local vertexCount = #face
+        
+        if #currentVertices + vertexCount > 65535 then
+            table.insert( meshes, mesh.createFromTable( currentVertices ) )
+            currentVertices = {}
+        end
+        
+        for i = #face, 1, -1 do
+            table.insert( currentVertices, face[i] )
+        end
+        
+        quota( quotaPercent )
+    end
+    
+    table.insert( meshes, mesh.createFromTable( currentVertices ) )
+    
+    return meshes
+end
+
+MeshData.buildMeshesAsync = async( meshData_buildMeshesAsync )
+
+function MeshData:numVertices()
+    return #self.vertexPositions
+end
+
+function MeshData:numFaces()
+    return #self.faces
+end
+
+local obj = {}
+
+local DEFAULT_SCALE = Vector( 1, 1, 1 )
+
+--- Parses an OBJ file and returns a MeshData object.
+---@param path string # The path to the OBJ file.
+---@param scale Vector? # The scale of the mesh.
+---@return MeshData # The parsed mesh data.
+function obj.parse( path, scale, useTempFolder )
+    if useTempFolder then
+        if not file.existsTemp( path ) then
+            error( "File does not exist: " .. path, 2 )
+        end
+    elseif not file.exists( path ) then
+        error( "File does not exist: " .. path, 2 )
+    end
+
+    local objData
+    if useTempFolder then
+        objData = file.readTemp( path )
+    else
+        objData = file.read( path )
+    end
+
+    if not objData then
+        error( "Failed to read file: " .. path, 2 )
+    end
+
+    scale = scale or DEFAULT_SCALE
+
+    ---@type Vector[], Vector[], TextureCoordinate[]
+    local vertexPositions, vertexNormals, vertexTexCoords = {}, {}, {}
+
+    ---@type MeshData
+    local meshData = setmetatable( {}, MeshData )
+    meshData.faces = {}
+    meshData.vertexPositions = vertexPositions
+    meshData.vertexNormals = vertexNormals
+    meshData.vertexTexCoords = vertexTexCoords
+
+    local lines = string.split( objData, "\n" )
+    for _, line in ipairs( lines ) do
+        ---@type string, string
+        local header, data = string.match( line, "^([^ ]+) (.*)$" )
+
+        if header == "v" then
+            local xString, yString, zString = unpack( data:split( " " ) )
+            local x = tonumber( xString )
+            local y = tonumber( yString )
+            local z = tonumber( zString )
+
+            table.insert( vertexPositions, Vector( x, y, z ) * scale )
+        elseif header == "vn" then
+            local xString, yString, zString = unpack( data:split( " " ) )
+            local x = tonumber( xString )
+            local y = tonumber( yString )
+            local z = tonumber( zString )
+
+            table.insert( vertexNormals, Vector( x, y, z ) )
+        elseif header == "vt" then
+            local uString, vString = unpack( data:split( " " ) )
+            local u = tonumber( uString )
+            local v = 1 - tonumber( vString )
+
+            table.insert( vertexTexCoords, { u = u, v = v } )
+        elseif header == "f" then
+            local vertexFormats = data:split( " " )
+            ---@type FaceData
+            local face = {}
+
+            for _, vertexFormat in ipairs( vertexFormats ) do
+                local vertexPositionID, vertexNormalID, vertexTexCoordID = unpack( vertexFormat:split( "/" ) )
+                local vertexPosition = vertexPositions[tonumber( vertexPositionID )]
+                local vertexNormal = vertexNormals[tonumber( vertexNormalID )]
+                local vertexTexCoord = vertexTexCoords[tonumber( vertexTexCoordID )]
+
+                table.insert( face, {
+                    pos = vertexPosition,
+                    normal = vertexNormal,
+                    u = vertexTexCoord.u,
+                    v = vertexTexCoord.v,
+                } )
+            end
+
+            table.insert( meshData.faces, face )
+        end
+    end
+
+    return meshData
+end
+
+local function obj_parseAsync( path, scale, useTempFolder, quotaPercent )
+    if useTempFolder then
+        if not file.existsTemp( path ) then
+            error( "File does not exist: " .. path, 2 )
+        end
+    elseif not file.exists( path ) then
+        error( "File does not exist: " .. path, 2 )
+    end
+
+    local objData
+    if useTempFolder then
+        objData = file.readTemp( path )
+    else
+        objData = file.read( path )
+    end
+
+    if not objData then
+        error( "Failed to read file: " .. path, 2 )
+    end
+
+    scale = scale or DEFAULT_SCALE
+
+    ---@type Vector[], Vector[], TextureCoordinate[]
+    local vertexPositions, vertexNormals, vertexTexCoords = {}, {}, {}
+
+    ---@type MeshData
+    local meshData = setmetatable( {}, MeshData )
+    meshData.faces = {}
+    meshData.vertexPositions = vertexPositions
+    meshData.vertexNormals = vertexNormals
+    meshData.vertexTexCoords = vertexTexCoords
+
+    local lines = string.split( objData, "\n" )
+    for _, line in ipairs( lines ) do
+        ---@type string, string
+        local header, data = string.match( line, "^([^ ]+) (.*)$" )
+
+        if header == "v" then
+            local xString, yString, zString = unpack( data:split( " " ) )
+            local x = tonumber( xString )
+            local y = tonumber( yString )
+            local z = tonumber( zString )
+
+            table.insert( vertexPositions, Vector( x, y, z ) * scale )
+        elseif header == "vn" then
+            local xString, yString, zString = unpack( data:split( " " ) )
+            local x = tonumber( xString )
+            local y = tonumber( yString )
+            local z = tonumber( zString )
+
+            table.insert( vertexNormals, Vector( x, y, z ) )
+        elseif header == "vt" then
+            local uString, vString = unpack( data:split( " " ) )
+            local u = tonumber( uString )
+            local v = 1 - tonumber( vString )
+
+            table.insert( vertexTexCoords, { u = u, v = v } )
+        elseif header == "f" then
+            local vertexFormats = data:split( " " )
+            ---@type FaceData
+            local face = {}
+
+            for _, vertexFormat in ipairs( vertexFormats ) do
+                local vertexPositionID, vertexTexCoordID, vertexNormalID = unpack( vertexFormat:split( "/" ) )
+                local vertexPosition = vertexPositions[tonumber( vertexPositionID )]
+                local vertexNormal = vertexNormals[tonumber( vertexNormalID )]
+                local vertexTexCoord = vertexTexCoords[tonumber( vertexTexCoordID )]
+
+                table.insert( face, {
+                    pos = vertexPosition,
+                    normal = vertexNormal,
+                    u = vertexTexCoord.u,
+                    v = vertexTexCoord.v,
+                } )
+            end
+
+            table.insert( meshData.faces, face )
+        end
+        
+        quota( quotaPercent )
+    end
+
+    return meshData
+end
+
+obj.parseAsync = async( obj_parseAsync )
+
+return obj
