@@ -1,0 +1,102 @@
+--@name UltiSetup
+--@author Periapsis
+--@shared
+
+--@include libs/async.txt
+require( "libs/async.txt" )
+
+if SERVER then
+end
+
+
+if CLIENT then
+    local function setupPermissionsAsync( permissions, description )
+        local function hasAllPermissions()
+            for _, permission in ipairs( permissions ) do
+                if not hasPermission( permission ) then return false end
+            end
+
+            return true
+        end
+
+        if hasAllPermissions() then return end
+        setupPermissionRequest( permissions, description, true )
+
+        while not hasAllPermissions() do yield() end
+    end
+
+    local function setupGithubDownload( owner, repo, branch, path )
+        assert( isstring( owner ), "Bad argument #1 'owner' to 'setupGithubDownload': Expected string, got " .. type( owner ) )
+        assert( isstring( repo ), "Bad argument #2 'repo' to 'setupGithubDownload': Expected string, got " .. type( repo ) )
+        assert( isstring( branch ), "Bad argument #3 'branch' to 'setupGithubDownload': Expected string, got " .. type( branch ) )
+        assert( isstring( path ), "Bad argument #4 'path' to 'setupGithubDownload': Expected string, got " .. type( path ) )
+
+        if not path:endsWith( "/" ) then
+            path = path .. "/"
+        end
+
+        file.createDir( path )
+
+        local commitInfoURL = string.format( "https://api.github.com/repos/%s/%s/commits?per_page=1&sha=%s", owner, repo, branch )
+        local commitInfoContent = await( http.getAsync( commitInfoURL ) )
+
+        if commitInfoContent.code ~= 200 then
+            error( "Error while fetching commit data from GitHub: " .. commitInfoContent.content )
+        end
+
+        local commitInfoSha = json.decode( commitInfoContent.content )[1].sha
+
+        local commitHashPath = path .. "_github.dat"
+
+        if not file.exists( commitHashPath ) then
+            local treeContentURL = string.format( "https://api.github.com/repos/%s/%s/git/trees/%s?recursive=1", owner, repo, commitInfoSha )
+            local treeContentRaw = await( http.getAsync( treeContentURL ) )
+            if treeContentRaw.code ~= 200 then
+                error( "Error while fetching tree contents from GitHub: " .. treeContentRaw.content )
+            end
+
+            local treeContent = json.decode( treeContentRaw.content )
+            for _, fileInfo in ipairs( treeContent.tree ) do
+                local fileContentURL = string.format( "https://raw.githubusercontent.com/%s/%s/%s/%s", owner, repo, commitInfoSha, fileInfo.path )
+                local fileContent = await( http.getAsync( fileContentURL ) )
+                if fileContent.code ~= 200 then
+                    error( "Error while fetching '" .. fileInfo.path .. "' from GitHub: " .. fileContent.content )
+                end
+
+                file.write( path .. fileInfo.path, fileContent.content )
+            end
+
+            file.write( commitHashPath, commitInfoSha )
+            return
+        end
+
+        local latestSha = file.read( commitHashPath )
+        if commitInfoSha == latestSha then return end
+
+        local compareCommitURL = string.format( "https://api.github.com/repos/%s/%s/compare/%s...%s", owner, repo, latestSha, commitInfoSha )
+        local compareCommitRaw = await( http.getAsync( compareCommitURL ) )
+        if compareCommitRaw.code ~= 200 then
+            error( "Error while fetching the commit comparison from GitHub: " .. compareCommitRaw.content )
+        end
+
+        local compareCommit = json.decode( compareCommitRaw )
+
+        for _, fileInfo in ipairs( compareCommit.files ) do
+            if fileInfo.status == "removed" then
+                file.delete( path .. fileInfo.filename )
+            else
+                local fileContents = await( http.getAsync( fileInfo.raw_url ) )
+                if fileContents.code ~= 200 then
+                    error( "Error while fetching '" .. fileInfo.filename .. "' from GitHub: " .. fileContents.content )
+                end
+
+                file.write( path .. fileInfo.filename, fileContents.content )
+            end
+        end
+    end
+
+    return {
+        setupPermissionsAsync = async( setupPermissionsAsync ),
+        setupGithubDownload = async( setupGithubDownload )
+    }
+end
