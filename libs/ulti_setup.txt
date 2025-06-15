@@ -5,10 +5,6 @@
 --@include libs/async.txt
 require( "libs/async.txt" )
 
-if SERVER then
-end
-
-
 if CLIENT then
     local function setupPermissionsAsync( permissions, description )
         local function hasAllPermissions()
@@ -23,6 +19,37 @@ if CLIENT then
         setupPermissionRequest( permissions, description, true )
 
         while not hasAllPermissions() do yield() end
+    end
+
+    local validFileExtentions = {
+        ["txt"] = true,
+        ["dat"] = true,
+        ["json"] = true,
+        ["xml"] = true,
+        ["csv"] = true,
+        ["dem"] = true,
+        ["vcd"] = true,
+        ["gma"] = true,
+        ["mdl"] = true,
+        ["phy"] = true,
+        ["vvd"] = true,
+        ["vtx"] = true,
+        ["ani"] = true,
+        ["vtf"] = true,
+        ["vmt"] = true,
+        ["png"] = true,
+        ["jpg"] = true,
+        ["jpeg"] = true,
+        ["mp3"] = true,
+        ["wav"] = true,
+        ["ogg"] = true,
+    }
+
+    local function getSafeFilePath( path )
+        local extension = string.getExtensionFromFilename( path )
+        if validFileExtentions[extension] then return path end
+
+        return path .. ".dat"
     end
 
     --- Installs or updates content from a GitHub repository.
@@ -68,7 +95,11 @@ if CLIENT then
                     error( "Error while fetching '" .. fileInfo.path .. "' from GitHub: " .. fileContent.content )
                 end
 
-                file.write( path .. fileInfo.path, fileContent.content )
+                local safeFilePath = getSafeFilePath( path .. fileInfo.path )
+                local success, err = pcall( file.write, safeFilePath, fileContent.content )
+                if not success then
+                    error( "Error while writing '" .. fileInfo.path .. "' to file: " .. err.message )
+                end
             end
 
             file.write( commitHashPath, commitInfoSha )
@@ -87,17 +118,21 @@ if CLIENT then
         local compareCommit = json.decode( compareCommitRaw )
 
         for _, fileInfo in ipairs( compareCommit.files ) do
+            local safeFilePath = getSafeFilePath( path .. fileInfo.filename )
+
             if fileInfo.status == "removed" then
-                file.delete( path .. fileInfo.filename )
+                file.delete( safeFilePath )
             else
                 local fileContents = await( http.getAsync( fileInfo.raw_url ) )
                 if fileContents.code ~= 200 then
                     error( "Error while fetching '" .. fileInfo.filename .. "' from GitHub: " .. fileContents.content )
                 end
 
-                file.write( path .. fileInfo.filename, fileContents.content )
+                file.write( safeFilePath, fileContents.content )
             end
         end
+
+        file.write( commitHashPath, commitInfoSha )
     end
 
     return {
