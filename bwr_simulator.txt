@@ -2,7 +2,7 @@
 --@author Periapsis
 --@shared
 
---@include libs/ultisetup.txt
+--@include libs/ulti_setup.txt
 
 --@include server/control_rod_selection.txt
 --@include server/control_rod_interaction.txt
@@ -20,7 +20,7 @@
 
 BWR = {}
 
-local ultisetup = require( "libs/ultisetup.txt" )
+local ultisetup = require( "libs/ulti_setup.txt" )
 
 require( "shared/control_rod_position.txt" )
 require( "shared/lprm_group_position.txt" )
@@ -67,7 +67,7 @@ if CLIENT then
         require( "client/full_core_display.txt" )
         require( "client/control_rod_selection.txt" )
         require( "client/control_rod_interaction.txt" )
-        
+
         ---@type PostDrawOpaqueRenderables
         local function drawMeshes( drawDepth, drawSkybox, draw2DSkybox )
             if drawSkybox or draw2DSkybox then return end

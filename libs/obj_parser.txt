@@ -61,46 +61,46 @@ end
 function MeshData:buildMeshes()
     local meshes = {}
     local currentVertices = {}
-    
+
     for _, face in ipairs( self.faces ) do
         local vertexCount = #face
-        
+
         if #currentVertices + vertexCount > 65535 then
             table.insert( meshes, mesh.createFromTable( currentVertices ) )
             currentVertices = {}
         end
-        
+
         for i = #face, 1, -1 do
             table.insert( currentVertices, face[i] )
         end
     end
-    
+
     table.insert( meshes, mesh.createFromTable( currentVertices ) )
-    
+
     return meshes
 end
 
 local function meshData_buildMeshesAsync( self, quotaPercent )
     local meshes = {}
     local currentVertices = {}
-    
+
     for _, face in ipairs( self.faces ) do
         local vertexCount = #face
-        
+
         if #currentVertices + vertexCount > 65535 then
             table.insert( meshes, mesh.createFromTable( currentVertices ) )
             currentVertices = {}
         end
-        
+
         for i = #face, 1, -1 do
             table.insert( currentVertices, face[i] )
         end
-        
+
         quota( quotaPercent )
     end
-    
+
     table.insert( meshes, mesh.createFromTable( currentVertices ) )
-    
+
     return meshes
 end
 
@@ -283,7 +283,7 @@ local function obj_parseAsync( path, scale, useTempFolder, quotaPercent )
 
             table.insert( meshData.faces, face )
         end
-        
+
         quota( quotaPercent )
     end
 

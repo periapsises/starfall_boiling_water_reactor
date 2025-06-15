@@ -80,7 +80,7 @@ end
 
 local function httpGetAsync( url, headers )
     while not http.canRequest() do yield() end
-    
+
     local waiting = true
     local response
 
@@ -120,7 +120,7 @@ http.getAsync = async( httpGetAsync )
 
 local function httpPostAsync( url, payload, headers )
     while not http.canRequest() do yield() end
-    
+
     local waiting = true
     local response
 
@@ -184,7 +184,7 @@ if SERVER then
         while not prop.canSpawn() do yield() end
         return prop.create( position, angles, model, frozen )
     end
-    
+
     prop.createAsync = async( propCreateAsync )
 end
 

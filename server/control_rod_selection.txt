@@ -6,33 +6,33 @@ local function setup()
     local platePosition = chip():localToWorld( Vector( 0, -86, 37.25 ) )
     local plateAngle = chip():localToWorldAngles( Angle( 11.25, 90, 0 ) )
     local plateModel = "models/hunter/plates/plate05x05.mdl"
-    
+
     local plateEntity = await( prop.createAsync( platePosition, plateAngle, plateModel, true ) )
     plateEntity:setColor( Color( 255, 255, 255, 0 ) )
     plateEntity:doNotDuplicate()
-    
+
     local boxSize = plateEntity:obbSize() * 0.9
-    
+
     local function onUseSelectorButtons( ply, key )
         if key ~= IN_KEY.USE then return end
-    
+
         local eyeTrace = ply:getEyeTrace()
         if eyeTrace.Entity ~= plateEntity then return end
         if eyeTrace.StartPos:getDistanceSqr( eyeTrace.HitPos ) > USE_MAX_DISTANCE then return end
-    
+
         local position = eyeTrace.HitPos
         local localPos = plateEntity:worldToLocal( position )
-    
+
         local column = math.floor( ( localPos.y + boxSize.x / 2 ) / boxSize.x * ControlRodPosition.columnSize )
         local row = math.floor( ( -localPos.x + boxSize.y / 2 ) / boxSize.y * ControlRodPosition.rowSize )
-    
+
         column = ControlRodPosition.minColumn + ( column * 4 )
         row = ControlRodPosition.minRow + ( row * 4 )
-    
+
         local rodName = string.format( "%02d-%02d", column, row )
         BWR.ControlRodInteraction.selectRod( rodName )
     end
-    
+
     hook.add( "KeyPress", "OnUseSelectorButtons", onUseSelectorButtons )
 end
 
