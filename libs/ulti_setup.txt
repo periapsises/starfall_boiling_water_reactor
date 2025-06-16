@@ -115,7 +115,7 @@ if CLIENT then
             error( "Error while fetching the commit comparison from GitHub: " .. compareCommitRaw.content )
         end
 
-        local compareCommit = json.decode( compareCommitRaw )
+        local compareCommit = json.decode( compareCommitRaw.content )
 
         for _, fileInfo in ipairs( compareCommit.files ) do
             local safeFilePath = getSafeFilePath( path .. fileInfo.filename )
