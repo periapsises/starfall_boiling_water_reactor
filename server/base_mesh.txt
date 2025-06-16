@@ -1,3 +1,27 @@
 --@server
 
+local COUNTER_HEIGHT = 40
+local INTERACTION_MODEL = "models/hunter/plates/plate.mdl"
 
+local function setupInteractibleEntities( jsonData )
+    for _, objectData in ipairs( jsonData ) do
+        local objectPosition = chip():localToWorld( Vector( objectData.location.x, objectData.location.y, objectData.location.z + COUNTER_HEIGHT ) )
+        local objectAngle = chip():localToWorldAngles( Angle( objectData.rotation.p, objectData.rotation.y, objectData.rotation.r ) )
+
+        local normal = objectAngle:getRight()
+        objectPosition = objectPosition - normal * 1.5
+        local other = objectAngle:getUp()
+        objectPosition = objectPosition - other * 1.5
+
+        local objectEntity = await( prop.createAsync( objectPosition, objectAngle, INTERACTION_MODEL, true ) )
+        objectEntity:setParent( chip() )
+    end
+end
+
+local function onReceiveBaseMeshJSONData( data )
+    local jsonData = json.decode( data )
+
+    async( setupInteractibleEntities )( jsonData )
+end
+
+net.receive( "BaseMeshJSONData", function() net.readStream( onReceiveBaseMeshJSONData ) end )

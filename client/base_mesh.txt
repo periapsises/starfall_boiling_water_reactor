@@ -1,3 +1,93 @@
 --@client
 
+--@include ../libs/obj_parser.txt
 
+local objParser = require( "../libs/obj_parser.txt" )
+
+local HOLO_DEFAULT_HEIGHT = 40
+local HOLO_DEFAULT_MODEL = "models/bull/hologram.mdl"
+local HOLO_DEFAULT_SCALE = Vector( 1, 1, 1 )
+
+local MESH_CPU_LIMIT = player() == owner() and 0.8 or 0.4
+
+local jsonRaw = file.read( "boiling_water_reactor/center_counter.json" )
+local jsonData = json.decode( jsonRaw )
+
+if player() == owner() then
+    net.start( "BaseMeshJSONData" )
+    net.writeStream( jsonRaw )
+    net.send()
+end
+
+--------------------------------------------------
+-- Center Counter
+
+local centerCounterMaterial = material.createFromImage( "data/sf_filedata/boiling_water_reactor/ambient_occlusion.png", "vertexlitgeneric smooth" )
+
+local centerCounterMeshData = await( objParser.parseAsync( "boiling_water_reactor/center_counter.obj.dat", 1, false, MESH_CPU_LIMIT ) )
+local centerCounterMeshes = await( centerCounterMeshData:buildMeshesAsync( MESH_CPU_LIMIT ) )
+
+local centerCounterPosition = chip():localToWorld( Vector( 0, 0, HOLO_DEFAULT_HEIGHT ) )
+local centerCounterAngle = chip():localToWorldAngles( Angle( 0, 0, 0 ) )
+for _, meshObject in ipairs( centerCounterMeshes ) do
+    local hologramObject = hologram.create( centerCounterPosition, centerCounterAngle, HOLO_DEFAULT_MODEL, HOLO_DEFAULT_SCALE )
+    hologramObject:setMaterial( "!" .. centerCounterMaterial:getName() )
+    hologramObject:setMesh( meshObject )
+    hologramObject:setParent( chip() )
+end
+
+--------------------------------------------------
+-- Center Counter Labels
+
+local centerCounterLabelMeshData = await( objParser.parseAsync( "boiling_water_reactor/labels.obj.dat", 1, false, MESH_CPU_LIMIT ) )
+local centerCounterLabelMeshes = await( centerCounterLabelMeshData:buildMeshesAsync( MESH_CPU_LIMIT ) )
+
+local labelColor = Color( 25, 25, 25, 255 )
+
+for _, meshObject in ipairs( centerCounterLabelMeshes ) do
+    local hologramObject = hologram.create( centerCounterPosition, centerCounterAngle, HOLO_DEFAULT_MODEL, HOLO_DEFAULT_SCALE )
+    hologramObject:setMaterial( "models/debug/debugwhite" )
+    hologramObject:setColor( labelColor )
+    hologramObject:setMesh( meshObject )
+    hologramObject:setParent( chip() )
+end
+
+--------------------------------------------------
+-- Interactible
+
+local meshCache = {}
+
+local function getCachedMesh( name )
+    if meshCache[name] ~= nil then return meshCache[name] end
+
+    local meshPath = "boiling_water_reactor/" .. name .. ".obj.dat"
+    if not file.exists( meshPath ) then
+        print( "Mesh not found: " .. meshPath )
+
+        meshCache[name] = false
+        return
+    end
+
+    local meshData = await( objParser.parseAsync( meshPath, 1, false, MESH_CPU_LIMIT ) )
+    local meshes = await( meshData:buildMeshesAsync( MESH_CPU_LIMIT ) )
+
+    meshCache[name] = meshes
+    return meshes
+end
+
+for _, objectData in ipairs( jsonData ) do
+    local objectName = objectData.name
+    local objectMesh = getCachedMesh( objectName )
+    
+    if objectMesh then
+        local objectPosition = chip():localToWorld( Vector( objectData.location.x, objectData.location.y, objectData.location.z + HOLO_DEFAULT_HEIGHT ) )
+        local objectAngle = chip():localToWorldAngles( Angle( objectData.rotation.p, objectData.rotation.y, objectData.rotation.r ) )
+
+        for _, meshObject in ipairs( objectMesh ) do
+            local hologramObject = hologram.create( objectPosition, objectAngle, HOLO_DEFAULT_MODEL, HOLO_DEFAULT_SCALE )
+            hologramObject:setMaterial( "!" .. centerCounterMaterial:getName() )
+            hologramObject:setMesh( meshObject )
+            hologramObject:setParent( chip() )
+        end
+    end
+end
