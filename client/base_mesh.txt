@@ -34,6 +34,8 @@ for _, meshObject in ipairs( centerCounterMeshes ) do
     hologramObject:setMaterial( "!" .. centerCounterMaterial:getName() )
     hologramObject:setMesh( meshObject )
     hologramObject:setParent( chip() )
+
+    hologramObject:setRenderBounds( Vector( -300, -100, -100 ), Vector( 300, 100, 100 ) )
 end
 
 --------------------------------------------------
@@ -50,6 +52,8 @@ for _, meshObject in ipairs( centerCounterLabelMeshes ) do
     hologramObject:setColor( labelColor )
     hologramObject:setMesh( meshObject )
     hologramObject:setParent( chip() )
+
+    hologramObject:setRenderBounds( Vector( -300, -100, -100 ), Vector( 300, 100, 100 ) )
 end
 
 --------------------------------------------------
@@ -75,7 +79,9 @@ local function getCachedMesh( name )
     return meshes
 end
 
-for _, objectData in ipairs( jsonData ) do
+local interactionEntities = {}
+
+for index, objectData in ipairs( jsonData ) do
     local objectName = objectData.name
     local objectMesh = getCachedMesh( objectName )
     
@@ -83,11 +89,38 @@ for _, objectData in ipairs( jsonData ) do
         local objectPosition = chip():localToWorld( Vector( objectData.location.x, objectData.location.y, objectData.location.z + HOLO_DEFAULT_HEIGHT ) )
         local objectAngle = chip():localToWorldAngles( Angle( objectData.rotation.p, objectData.rotation.y, objectData.rotation.r ) )
 
+        local parent
         for _, meshObject in ipairs( objectMesh ) do
             local hologramObject = hologram.create( objectPosition, objectAngle, HOLO_DEFAULT_MODEL, HOLO_DEFAULT_SCALE )
             hologramObject:setMaterial( "!" .. centerCounterMaterial:getName() )
             hologramObject:setMesh( meshObject )
-            hologramObject:setParent( chip() )
+
+            if not parent then
+                parent = hologramObject
+                hologramObject:setParent( chip() )
+            else
+                hologramObject:setParent( parent )
+            end
         end
+
+        interactionEntities[index] = parent
     end
 end
+
+local function onPushButtonPressed()
+    local index = net.readUInt( 8 )
+    local objectData = jsonData[index]
+    local objectEntity = interactionEntities[index]
+
+    local normal = objectEntity:getAngles():getRight()
+
+    local position = objectEntity:getPos()
+    local newPosition = position - normal * 0.2
+    objectEntity:setPos( newPosition )
+
+    timer.simple( 0.1, function()
+        objectEntity:setPos( position )
+    end )
+end
+
+net.receive( "PushButton", onPushButtonPressed )

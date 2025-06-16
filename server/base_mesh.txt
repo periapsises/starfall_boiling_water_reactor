@@ -2,9 +2,12 @@
 
 local COUNTER_HEIGHT = 40
 local INTERACTION_MODEL = "models/hunter/plates/plate.mdl"
+local INTERACTION_ENTITY_COLOR = Color( 255, 255, 255, 0 )
+
+local interactionEntities = {}
 
 local function setupInteractibleEntities( jsonData )
-    for _, objectData in ipairs( jsonData ) do
+    for index, objectData in ipairs( jsonData ) do
         local objectPosition = chip():localToWorld( Vector( objectData.location.x, objectData.location.y, objectData.location.z + COUNTER_HEIGHT ) )
         local objectAngle = chip():localToWorldAngles( Angle( objectData.rotation.p, objectData.rotation.y, objectData.rotation.r ) )
 
@@ -15,13 +18,39 @@ local function setupInteractibleEntities( jsonData )
 
         local objectEntity = await( prop.createAsync( objectPosition, objectAngle, INTERACTION_MODEL, true ) )
         objectEntity:setParent( chip() )
+        objectEntity:setNocollideAll( true )
+        objectEntity:setColor( INTERACTION_ENTITY_COLOR )
+
+        interactionEntities[objectEntity] = objectData
+        objectData.index = index
     end
 end
 
+local alreadyReceived = false
 local function onReceiveBaseMeshJSONData( data )
+    if alreadyReceived then return end
+    alreadyReceived = true
+
     local jsonData = json.decode( data )
 
     async( setupInteractibleEntities )( jsonData )
 end
 
 net.receive( "BaseMeshJSONData", function() net.readStream( onReceiveBaseMeshJSONData ) end )
+
+local function onPlayerInteracts( ply, key )
+    if key ~= IN_KEY.USE then return end
+
+    local entity = ply:getEyeTrace().Entity
+    local entityData = interactionEntities[entity]
+    if not entityData then return end
+
+    if entityData.name:find( "pushbutton" ) then
+        entity:emitSound( "Buttons.snd14", nil, math.random( 0.8, 1.2 ) )
+        net.start( "PushButton" )
+        net.writeUInt( entityData.index, 8 )
+        net.send()
+    end
+end
+
+hook.add( "KeyPress", "OnPlayerInteracts", onPlayerInteracts )
