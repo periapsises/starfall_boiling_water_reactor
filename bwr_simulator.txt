@@ -27,15 +27,20 @@ require( "shared/control_rod_position.txt" )
 require( "shared/lprm_group_position.txt" )
 
 if SERVER then
-    do -- HUD Component initialization
+    chip():setNocollideAll( true )
+
+    async( function()
         local hudPosition = chip():localToWorld( Vector( 0, 12, 0 ) )
         local hudAngle = chip():localToWorldAngles( Angle() )
         local hudModel = "models/bull/dynamicbuttonsf.mdl"
 
+        while not prop.canSpawn() do yield() end
+
         local hud = prop.createComponent( hudPosition, hudAngle, "starfall_hud", hudModel, true )
         hud:linkComponent( chip() )
         hud:doNotDuplicate()
-    end
+        hud:setNocollideAll( true )
+    end )()
 
     require( "server/base_mesh.txt" )
     require( "server/control_rod_selection.txt" )
