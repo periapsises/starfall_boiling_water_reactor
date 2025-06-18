@@ -3,13 +3,14 @@ local ControlRodPosition = BWR.ControlRodPosition
 local USE_MAX_DISTANCE = 64^2
 
 local function setup()
-    local platePosition = chip():localToWorld( Vector( 0, -86, 37.25 ) )
-    local plateAngle = chip():localToWorldAngles( Angle( 11.25, 90, 0 ) )
+    local platePosition = chip():localToWorld( Vector( 0, -17.5, 36 ) )
+    local plateAngle = chip():localToWorldAngles( Angle( 11.25, 270, 0 ) )
     local plateModel = "models/hunter/plates/plate05x05.mdl"
 
     local plateEntity = await( prop.createAsync( platePosition, plateAngle, plateModel, true ) )
     plateEntity:setColor( Color( 255, 255, 255, 0 ) )
     plateEntity:doNotDuplicate()
+    plateEntity:setNocollideAll( true )
 
     local boxSize = plateEntity:obbSize() * 0.9
 

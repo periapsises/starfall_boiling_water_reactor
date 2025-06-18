@@ -25,9 +25,9 @@ FullCoreDisplay.IndicatorType = {
     LPRM_D_UP           = 14
 }
 
-FullCoreDisplay.INDICATOR_WIDTH = 0.96
-FullCoreDisplay.INDICATOR_HEIGHT = 0.48
-FullCoreDisplay.INDICATOR_SPACING = 0.06
+FullCoreDisplay.INDICATOR_WIDTH = 0.94
+FullCoreDisplay.INDICATOR_HEIGHT = FullCoreDisplay.INDICATOR_WIDTH / 2
+FullCoreDisplay.INDICATOR_SPACING = 0.385
 
 local VERTICES_PER_INDICATOR = 4
 local INDICATORS_PER_ROD = 6

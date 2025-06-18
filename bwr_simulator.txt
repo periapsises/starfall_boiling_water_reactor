@@ -38,8 +38,8 @@ if SERVER then
     end
 
     require( "server/base_mesh.txt" )
-    --require( "server/control_rod_selection.txt" )
-    --require( "server/control_rod_interaction.txt" )
+    require( "server/control_rod_selection.txt" )
+    require( "server/control_rod_interaction.txt" )
 end
 
 if CLIENT then
@@ -66,9 +66,9 @@ if CLIENT then
         require( "client/base_mesh.txt" )
         require( "client/mesh_handle.txt" )
         require( "client/mesh_handler.txt" )
-        --require( "client/full_core_display.txt" )
-        --require( "client/control_rod_selection.txt" )
-        --require( "client/control_rod_interaction.txt" )
+        require( "client/full_core_display.txt" )
+        require( "client/control_rod_selection.txt" )
+        require( "client/control_rod_interaction.txt" )
 
         ---@type PostDrawOpaqueRenderables
         local function drawMeshes( drawDepth, drawSkybox, draw2DSkybox )

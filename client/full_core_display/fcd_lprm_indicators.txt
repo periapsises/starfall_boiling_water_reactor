@@ -29,8 +29,8 @@ local lprmIndicatorPositioning = {
 }
 
 local meshHandleMatrix = chip():getMatrix()
-meshHandleMatrix:translate( Vector( 0, -102, 87 ) )
-meshHandleMatrix:rotate( Angle( 180, 0, 90 ) )
+meshHandleMatrix:translate( Vector( 0, -0.85, 89.9 ) )
+meshHandleMatrix:rotate( Angle( 0, 0, 270 ) )
 
 --- Adds four vertices to the current group of vertices.
 ---@param v1 Vertex3D
