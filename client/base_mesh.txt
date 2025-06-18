@@ -22,7 +22,7 @@ end
 --------------------------------------------------
 -- Center Counter
 
-local centerCounterMaterial = material.createFromImage( "data/sf_filedata/boiling_water_reactor/ambient_occlusion.png", "vertexlitgeneric smooth" )
+local centerCounterMaterial = material.createFromImage( "data/sf_filedata/boiling_water_reactor/diffuse.png", "vertexlitgeneric smooth" )
 
 local centerCounterMeshData = await( objParser.parseAsync( "boiling_water_reactor/center_counter.obj.dat", 1, false, MESH_CPU_LIMIT ) )
 local centerCounterMeshes = await( centerCounterMeshData:buildMeshesAsync( MESH_CPU_LIMIT ) )
