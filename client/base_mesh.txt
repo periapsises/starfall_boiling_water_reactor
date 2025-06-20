@@ -81,9 +81,23 @@ end
 
 local interactionEntities = {}
 
-for index, objectData in ipairs( jsonData ) do
-    local objectName = objectData.name
-    local objectMesh = getCachedMesh( objectName )
+local interactibleClasses = {
+    ["resethandle"] = true,
+    ["panel_buttonknob"] = true,
+    ["counter_buttonknob"] = true,
+    ["panel_pushbutton"] = true,
+    ["counter_pushbutton"] = true,
+    ["panel_keyhole"] = true,
+    ["panel_selectorlever"] = true,
+    ["counter_selectorlever"] = true,
+    ["rodcontrols_button"] = true,
+    ["irmselector_knob"] = true
+}
+
+local index = 1
+
+for _, objectData in ipairs( jsonData.dynamic_data ) do
+    local objectMesh = getCachedMesh( objectData.mesh )
     
     if objectMesh then
         local objectPosition = chip():localToWorld( Vector( objectData.location.x, objectData.location.y, objectData.location.z + HOLO_DEFAULT_HEIGHT ) )
@@ -95,6 +109,15 @@ for index, objectData in ipairs( jsonData ) do
             hologramObject:setMaterial( "!" .. centerCounterMaterial:getName() )
             hologramObject:setMesh( meshObject )
 
+            if objectData.name:endsWith(".L") then
+                hologramObject:setColor( Color( 255, 50, 50, 255 ) )
+                hologramObject:suppressEngineLighting( true )
+            elseif objectData.name:endsWith(".R") then
+                hologramObject:setColor( Color( 0, 100, 0, 255 ) )
+            elseif objectData.name:find( ".LightBulb" ) then
+                hologramObject:setColor( Color( 100, 100, 80, 255 ) )
+            end
+
             if not parent then
                 parent = hologramObject
                 hologramObject:setParent( chip() )
@@ -103,13 +126,16 @@ for index, objectData in ipairs( jsonData ) do
             end
         end
 
-        interactionEntities[index] = parent
+        if interactibleClasses[objectData.mesh] then
+            interactionEntities[index] = parent
+            index = index + 1
+        end
     end
 end
 
 local function onPushButtonPressed()
     local index = net.readUInt( 8 )
-    local objectData = jsonData[index]
+    local objectData = jsonData.dynamic_data[index]
     local objectEntity = interactionEntities[index]
 
     local normal = objectEntity:getAngles():getRight()

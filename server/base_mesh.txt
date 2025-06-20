@@ -6,23 +6,42 @@ local INTERACTION_ENTITY_COLOR = Color( 255, 255, 255, 0 )
 
 local interactionEntities = {}
 
-local function setupInteractibleEntities( jsonData )
-    for index, objectData in ipairs( jsonData ) do
-        local objectPosition = chip():localToWorld( Vector( objectData.location.x, objectData.location.y, objectData.location.z + COUNTER_HEIGHT ) )
-        local objectAngle = chip():localToWorldAngles( Angle( objectData.rotation.p, objectData.rotation.y, objectData.rotation.r ) )
+local interactibleClasses = {
+    ["resethandle"] = true,
+    ["panel_buttonknob"] = true,
+    ["counter_buttonknob"] = true,
+    ["panel_pushbutton"] = true,
+    ["counter_pushbutton"] = true,
+    ["panel_keyhole"] = true,
+    ["panel_selectorlever"] = true,
+    ["counter_selectorlever"] = true,
+    ["rodcontrols_button"] = true,
+    ["irmselector_knob"] = true
+}
 
-        local normal = objectAngle:getRight()
-        objectPosition = objectPosition - normal * 1.5
-        local other = objectAngle:getUp()
-        objectPosition = objectPosition - other * 1.5
+local function setupInteractibleEntities( dynamicObjects )
+    local index = 1
 
-        local objectEntity = await( prop.createAsync( objectPosition, objectAngle, INTERACTION_MODEL, true ) )
-        objectEntity:setParent( chip() )
-        objectEntity:setNocollideAll( true )
-        objectEntity:setColor( INTERACTION_ENTITY_COLOR )
+    for _, objectData in ipairs( dynamicObjects ) do
+        if interactibleClasses[objectData.mesh] then
+            local objectPosition = chip():localToWorld( Vector( objectData.location.x, objectData.location.y, objectData.location.z + COUNTER_HEIGHT ) )
+            local objectAngle = chip():localToWorldAngles( Angle( objectData.rotation.p, objectData.rotation.y, objectData.rotation.r ) )
 
-        interactionEntities[objectEntity] = objectData
-        objectData.index = index
+            local normal = objectAngle:getRight()
+            objectPosition = objectPosition - normal * 1.5
+            local other = objectAngle:getUp()
+            objectPosition = objectPosition - other * 1.5
+
+            local objectEntity = await( prop.createAsync( objectPosition, objectAngle, INTERACTION_MODEL, true ) )
+            objectEntity:setParent( chip() )
+            objectEntity:setNocollideAll( true )
+            objectEntity:setColor( INTERACTION_ENTITY_COLOR )
+
+            interactionEntities[objectEntity] = objectData
+            objectData.index = index
+
+            index = index + 1
+        end
     end
 end
 
@@ -33,7 +52,7 @@ local function onReceiveBaseMeshJSONData( data )
 
     local jsonData = json.decode( data )
 
-    async( setupInteractibleEntities )( jsonData )
+    async( setupInteractibleEntities )( jsonData.dynamic_data )
 end
 
 net.receive( "BaseMeshJSONData", function() net.readStream( onReceiveBaseMeshJSONData ) end )
