@@ -41,7 +41,7 @@ end
 --------------------------------------------------
 -- Center Counter Labels
 
-local centerCounterLabelMeshData = await( objParser.parseAsync( "boiling_water_reactor/labels.obj.dat", 1, false, MESH_CPU_LIMIT ) )
+local centerCounterLabelMeshData = await( objParser.parseAsync( "boiling_water_reactor/center_counter_labels.obj.dat", 1, false, MESH_CPU_LIMIT ) )
 local centerCounterLabelMeshes = await( centerCounterLabelMeshData:buildMeshesAsync( MESH_CPU_LIMIT ) )
 
 local labelColor = Color( 25, 25, 25, 255 )
