@@ -65,7 +65,10 @@ if CLIENT then
 
     local function init()
         await( ultisetup.setupPermissionsAsync( permissionList, permissionDescription ) )
-        await( ultisetup.setupGithubDownload( "periapsises", "starfall_boiling_water_reactor", "content", "boiling_water_reactor" ) )
+
+        if player() ~= owner() or input.isKeyDown( KEY.SHIFT ) then
+            await( ultisetup.setupGithubDownload( "periapsises", "starfall_boiling_water_reactor", "content", "boiling_water_reactor" ) )
+        end
 
         require( "client/camera_zoom.txt" )
         require( "client/base_mesh.txt" )
