@@ -1,0 +1,20 @@
+--@client
+
+BWR.Json = {}
+
+local jsonRaw = file.read( "boiling_water_reactor/center_counter.json" )
+BWR.Json.Data = json.decode( jsonRaw )
+
+if player() == owner() then
+    net.start( "BaseMeshJSONData" )
+    net.writeStream( jsonRaw )
+    net.send()
+end
+
+function BWR.Json.Vector( object )
+    return Vector( object.x, object.y, object.z )
+end
+
+function BWR.Json.Angle( object )
+    return Angle( object.p, object.y, object.r )
+end

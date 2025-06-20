@@ -10,14 +10,7 @@ local HOLO_DEFAULT_SCALE = Vector( 1, 1, 1 )
 
 local MESH_CPU_LIMIT = player() == owner() and 0.8 or 0.4
 
-local jsonRaw = file.read( "boiling_water_reactor/center_counter.json" )
-local jsonData = json.decode( jsonRaw )
-
-if player() == owner() then
-    net.start( "BaseMeshJSONData" )
-    net.writeStream( jsonRaw )
-    net.send()
-end
+local JsonData = BWR.Json.Data
 
 --------------------------------------------------
 -- Center Counter
@@ -96,7 +89,7 @@ local interactibleClasses = {
 
 local index = 1
 
-for _, objectData in ipairs( jsonData.dynamic_data ) do
+for _, objectData in ipairs( JsonData.dynamic_data ) do
     local objectMesh = getCachedMesh( objectData.mesh )
     
     if objectMesh then
@@ -110,7 +103,8 @@ for _, objectData in ipairs( jsonData.dynamic_data ) do
             hologramObject:setMesh( meshObject )
 
             if objectData.name:endsWith(".L") then
-                hologramObject:setColor( Color( 255, 50, 50, 255 ) )
+                hologramObject:setColor( Color( 255, 10, 10, 255 ) )
+                hologramObject:setMaterial( "models/debug/debugwhite" )
                 hologramObject:suppressEngineLighting( true )
             elseif objectData.name:endsWith(".R") then
                 hologramObject:setColor( Color( 0, 100, 0, 255 ) )
@@ -135,7 +129,7 @@ end
 
 local function onPushButtonPressed()
     local index = net.readUInt( 8 )
-    local objectData = jsonData.dynamic_data[index]
+    local objectData = JsonData.dynamic_data[index]
     local objectEntity = interactionEntities[index]
 
     local normal = objectEntity:getAngles():getRight()
