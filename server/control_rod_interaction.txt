@@ -192,17 +192,25 @@ local function generateInteractionButtons()
     local function lVector( x, y, z ) return chip():localToWorld( Vector( x, y, z ) ) end
     local function lAngle( x, y, z ) return chip():localToWorldAngles( Angle( x, y, z ) ) end
 
-    insertButton = await( prop.createAsync( lVector( -13.25, -79.25, 34.75 ), lAngle( 11.25, 90, 0 ), "models/hunter/plates/plate.mdl", true ) )
+    insertButton = await( prop.createAsync( lVector( -13.25, -79.25, 34.75 ), lAngle( 11.25, 270, 0 ), "models/hunter/plates/plate.mdl", true ) )
     insertButton:setColor( Color( 255, 255, 255, 0 ) )
+    insertButton:doNotDuplicate()
+    insertButton:setNocollideAll( true )
 
-    withdrawButton = await( prop.createAsync( lVector( -16.25, -79.25, 34.75 ), lAngle( 11.25, 90, 0 ), "models/hunter/plates/plate.mdl", true ) )
+    withdrawButton = await( prop.createAsync( lVector( -16.25, -79.25, 34.75 ), lAngle( 11.25, 270, 0 ), "models/hunter/plates/plate.mdl", true ) )
     withdrawButton:setColor( Color( 255, 255, 255, 0 ) )
+    withdrawButton:doNotDuplicate()
+    withdrawButton:setNocollideAll( true )
 
-    continuousInsertButton = await( prop.createAsync( lVector( 16.25, -79.25, 34.75 ), lAngle( 11.25, 90, 0 ), "models/hunter/plates/plate.mdl", true ) )
+    continuousInsertButton = await( prop.createAsync( lVector( 16.25, -79.25, 34.75 ), lAngle( 11.25, 270, 0 ), "models/hunter/plates/plate.mdl", true ) )
     continuousInsertButton:setColor( Color( 255, 255, 255, 0 ) )
+    continuousInsertButton:doNotDuplicate()
+    continuousInsertButton:setNocollideAll( true )
 
-    continuousWithdrawButton = await( prop.createAsync( lVector( 13.25, -79.25, 34.75 ), lAngle( 11.25, 90, 0 ), "models/hunter/plates/plate.mdl", true ) )
+    continuousWithdrawButton = await( prop.createAsync( lVector( 13.25, -79.25, 34.75 ), lAngle( 11.25, 270, 0 ), "models/hunter/plates/plate.mdl", true ) )
     continuousWithdrawButton:setColor( Color( 255, 255, 255, 0 ) )
+    continuousWithdrawButton:doNotDuplicate()
+    continuousWithdrawButton:setNocollideAll( true )
 
     buttons = {
         {
