@@ -4,6 +4,7 @@
 
 --@include libs/ulti_setup.txt
 
+--@include server/json_data.txt
 --@include server/base_mesh.txt
 --@include server/control_rod_selection.txt
 --@include server/control_rod_interaction.txt
@@ -43,6 +44,7 @@ if SERVER then
         hud:setNocollideAll( true )
     end )()
 
+    require( "server/json_data.txt" )
     require( "server/base_mesh.txt" )
     require( "server/control_rod_selection.txt" )
     require( "server/control_rod_interaction.txt" )

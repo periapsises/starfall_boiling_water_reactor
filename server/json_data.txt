@@ -1,0 +1,22 @@
+--@server
+
+BWR.Json = {}
+
+local alreadyReceived = false
+local function onReceiveBaseMeshJSONData( data )
+    if alreadyReceived then return end
+    alreadyReceived = true
+
+    BWR.Json.Data = json.decode( data )
+    hook.run( "JsonDataReceived" )
+end
+
+net.receive( "BaseMeshJSONData", function() net.readStream( onReceiveBaseMeshJSONData ) end )
+
+function BWR.Json.Vector( object )
+    return Vector( object.x, object.y, object.z )
+end
+
+function BWR.Json.Angle( object )
+    return Angle( object.p, object.y, object.r )
+end

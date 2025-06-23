@@ -45,17 +45,9 @@ local function setupInteractibleEntities( dynamicObjects )
     end
 end
 
-local alreadyReceived = false
-local function onReceiveBaseMeshJSONData( data )
-    if alreadyReceived then return end
-    alreadyReceived = true
-
-    local jsonData = json.decode( data )
-
-    async( setupInteractibleEntities )( jsonData.dynamic_data )
-end
-
-net.receive( "BaseMeshJSONData", function() net.readStream( onReceiveBaseMeshJSONData ) end )
+hook.add( "JsonDataReceived", "SetupInteractibleEntities", function()
+    async( setupInteractibleEntities )( BWR.Json.Data.dynamic_data )
+end )
 
 local function onPlayerInteracts( ply, key )
     if key ~= IN_KEY.USE then return end
