@@ -1,0 +1,342 @@
+local controlRodGroups = {
+    -- First column
+    {
+        bottom_left = { column = 2, row = 43 },
+        bottom_right = { column = 6, row = 43 },
+        top_left = nil,
+        top_right = { column = 6, row = 47 }
+    },
+    {
+        bottom_left = { column = 2, row = 27 },
+        bottom_right = { column = 6, row = 27 },
+        top_left = { column = 2, row = 31 },
+        top_right = { column = 6, row = 31 }
+    },
+    {
+        bottom_left = { column = 2, row = 19 },
+        bottom_right = { column = 6, row = 19 },
+        top_left = { column = 2, row = 23 },
+        top_right = { column = 6, row = 23 }
+    },
+    {
+        bottom_left = nil,
+        bottom_right = nil,
+        top_left = { column = 2, row = 15 },
+        top_right = { column = 6, row = 15 }
+    },
+    -- Second column
+    {
+        bottom_left = { column = 10, row = 51 },
+        bottom_right = { column = 14, row = 51 },
+        top_left = nil,
+        top_right = { column = 14, row = 55 }
+    },
+    {
+        bottom_left = { column = 10, row = 43 },
+        bottom_right = { column = 14, row = 43 },
+        top_left = { column = 10, row = 47 },
+        top_right = { column = 14, row = 47 }
+    },
+    {
+        bottom_left = { column = 10, row = 35 },
+        bottom_right = { column = 14, row = 35 },
+        top_left = { column = 10, row = 39 },
+        top_right = { column = 14, row = 39 }
+    },
+    {
+        bottom_left = { column = 10, row = 27 },
+        bottom_right = { column = 14, row = 27 },
+        top_left = { column = 10, row = 31 },
+        top_right = { column = 14, row = 31 }
+    },
+    {
+        bottom_left = { column = 10, row = 19 },
+        bottom_right = { column = 14, row = 19 },
+        top_left = { column = 10, row = 23 },
+        top_right = { column = 14, row = 23 }
+    },
+    {
+        bottom_left = { column = 10, row = 11 },
+        bottom_right = { column = 14, row = 11 },
+        top_left = { column = 10, row = 15 },
+        top_right = { column = 14, row = 15 }
+    },
+    {
+        bottom_left = nil,
+        bottom_right = nil,
+        top_left = nil,
+        top_right = { column = 14, row = 07 }
+    },
+    -- Third column
+    {
+        bottom_left = { column = 18, row = 59 },
+        bottom_right = { column = 22, row = 59 },
+        top_left = nil,
+        top_right = nil
+    },
+    {
+        bottom_left = { column = 18, row = 51 },
+        bottom_right = { column = 22, row = 51 },
+        top_left = { column = 18, row = 55 },
+        top_right = { column = 22, row = 55 }
+    },
+    {
+        bottom_left = { column = 18, row = 43 },
+        bottom_right = { column = 22, row = 43 },
+        top_left = { column = 18, row = 47 },
+        top_right = { column = 22, row = 47 }
+    },
+    {
+        bottom_left = { column = 18, row = 35 },
+        bottom_right = { column = 22, row = 35 },
+        top_left = { column = 18, row = 39 },
+        top_right = { column = 22, row = 39 }
+    },
+    {
+        bottom_left = { column = 18, row = 27 },
+        bottom_right = { column = 22, row = 27 },
+        top_left = { column = 18, row = 31 },
+        top_right = { column = 22, row = 31 }
+    },
+    {
+        bottom_left = { column = 18, row = 19 },
+        bottom_right = { column = 22, row = 19 },
+        top_left = { column = 18, row = 23 },
+        top_right = { column = 22, row = 23 }
+    },
+    {
+        bottom_left = { column = 18, row = 11 },
+        bottom_right = { column = 22, row = 11 },
+        top_left = { column = 18, row = 15 },
+        top_right = { column = 22, row = 15 }
+    },
+    {
+        bottom_left = { column = 18, row = 03 },
+        bottom_right = { column = 22, row = 03 },
+        top_left = { column = 18, row = 07 },
+        top_right = { column = 22, row = 07 }
+    },
+    -- Fourth column
+    {
+        bottom_left = { column = 26, row = 59 },
+        bottom_right = { column = 30, row = 59 },
+        top_left = nil,
+        top_right = nil
+    },
+    {
+        bottom_left = { column = 26, row = 51 },
+        bottom_right = { column = 30, row = 51 },
+        top_left = { column = 26, row = 55 },
+        top_right = { column = 30, row = 55 }
+    },
+    {
+        bottom_left = { column = 26, row = 43 },
+        bottom_right = { column = 30, row = 43 },
+        top_left = { column = 26, row = 47 },
+        top_right = { column = 30, row = 47 }
+    },
+    {
+        bottom_left = { column = 26, row = 35 },
+        bottom_right = { column = 30, row = 35 },
+        top_left = { column = 26, row = 39 },
+        top_right = { column = 30, row = 39 }
+    },
+    {
+        bottom_left = { column = 26, row = 27 },
+        bottom_right = { column = 30, row = 27 },
+        top_left = { column = 26, row = 31 },
+        top_right = { column = 30, row = 31 }
+    },
+    {
+        bottom_left = { column = 26, row = 19 },
+        bottom_right = { column = 30, row = 19 },
+        top_left = { column = 26, row = 23 },
+        top_right = { column = 30, row = 23 }
+    },
+    {
+        bottom_left = { column = 26, row = 11 },
+        bottom_right = { column = 30, row = 11 },
+        top_left = { column = 26, row = 15 },
+        top_right = { column = 30, row = 15 }
+    },
+    {
+        bottom_left = { column = 26, row = 03 },
+        bottom_right = { column = 30, row = 03 },
+        top_left = { column = 26, row = 07 },
+        top_right = { column = 30, row = 07 }
+    },
+    -- Fifth column
+    {
+        bottom_left = { column = 34, row = 59 },
+        bottom_right = { column = 38, row = 59 },
+        top_left = nil,
+        top_right = nil
+    },
+    {
+        bottom_left = { column = 34, row = 51 },
+        bottom_right = { column = 38, row = 51 },
+        top_left = { column = 34, row = 55 },
+        top_right = { column = 38, row = 55 }
+    },
+    {
+        bottom_left = { column = 34, row = 43 },
+        bottom_right = { column = 38, row = 43 },
+        top_left = { column = 34, row = 47 },
+        top_right = { column = 38, row = 47 }
+    },
+    {
+        bottom_left = { column = 34, row = 35 },
+        bottom_right = { column = 38, row = 35 },
+        top_left = { column = 34, row = 39 },
+        top_right = { column = 38, row = 39 }
+    },
+    {
+        bottom_left = { column = 34, row = 27 },
+        bottom_right = { column = 38, row = 27 },
+        top_left = { column = 34, row = 31 },
+        top_right = { column = 38, row = 31 }
+    },
+    {
+        bottom_left = { column = 34, row = 19 },
+        bottom_right = { column = 38, row = 19 },
+        top_left = { column = 34, row = 23 },
+        top_right = { column = 38, row = 23 }
+    },
+    {
+        bottom_left = { column = 34, row = 11 },
+        bottom_right = { column = 38, row = 11 },
+        top_left = { column = 34, row = 15 },
+        top_right = { column = 38, row = 15 }
+    },
+    {
+        bottom_left = { column = 34, row = 03 },
+        bottom_right = { column = 38, row = 03 },
+        top_left = { column = 34, row = 07 },
+        top_right = { column = 38, row = 07 }
+    },
+    -- Sixth column
+    {
+        bottom_left = { column = 42, row = 59 },
+        bottom_right = nil,
+        top_left = nil,
+        top_right = nil
+    },
+    {
+        bottom_left = { column = 42, row = 51 },
+        bottom_right = { column = 46, row = 51 },
+        top_left = { column = 42, row = 55 },
+        top_right = { column = 46, row = 55 }
+    },
+    {
+        bottom_left = { column = 42, row = 43 },
+        bottom_right = { column = 46, row = 43 },
+        top_left = { column = 42, row = 47 },
+        top_right = { column = 46, row = 47 }
+    },
+    {
+        bottom_left = { column = 42, row = 35 },
+        bottom_right = { column = 46, row = 35 },
+        top_left = { column = 42, row = 39 },
+        top_right = { column = 46, row = 39 }
+    },
+    {
+        bottom_left = { column = 42, row = 27 },
+        bottom_right = { column = 46, row = 27 },
+        top_left = { column = 42, row = 31 },
+        top_right = { column = 46, row = 31 }
+    },
+    {
+        bottom_left = { column = 42, row = 19 },
+        bottom_right = { column = 46, row = 19 },
+        top_left = { column = 42, row = 23 },
+        top_right = { column = 46, row = 23 }
+    },
+    {
+        bottom_left = { column = 42, row = 11 },
+        bottom_right = { column = 46, row = 11 },
+        top_left = { column = 42, row = 15 },
+        top_right = { column = 46, row = 15 }
+    },
+    {
+        bottom_left = { column = 42, row = 03 },
+        bottom_right = nil,
+        top_left = { column = 42, row = 07 },
+        top_right = { column = 46, row = 07 }
+    },
+    -- Seventh column
+    {
+        bottom_left = { column = 50, row = 51 },
+        bottom_right = nil,
+        top_left = nil,
+        top_right = nil
+    },
+    {
+        bottom_left = { column = 50, row = 43 },
+        bottom_right = { column = 54, row = 43 },
+        top_left = { column = 50, row = 47 },
+        top_right = { column = 54, row = 47 }
+    },
+    {
+        bottom_left = { column = 50, row = 35 },
+        bottom_right = { column = 54, row = 35 },
+        top_left = { column = 50, row = 39 },
+        top_right = { column = 54, row = 39 }
+    },
+    {
+        bottom_left = { column = 50, row = 27 },
+        bottom_right = { column = 54, row = 27 },
+        top_left = { column = 50, row = 31 },
+        top_right = { column = 54, row = 31 }
+    },
+    {
+        bottom_left = { column = 50, row = 23 },
+        bottom_right = { column = 54, row = 23 },
+        top_left = { column = 50, row = 27 },
+        top_right = { column = 54, row = 27 }
+    },
+    {
+        bottom_left = { column = 50, row = 11 },
+        bottom_right = nil,
+        top_left = { column = 50, row = 15 },
+        top_right = { column = 54, row = 15 }
+    },
+    -- Eighth column
+    {
+        bottom_left = { column = 58, row = 43 },
+        bottom_right = nil,
+        top_left = nil,
+        top_right = nil
+    },
+    {
+        bottom_left = { column = 58, row = 35 },
+        bottom_right = nil,
+        top_left = { column = 58, row = 39 },
+        top_right = nil
+    },
+    {
+        bottom_left = { column = 58, row = 27 },
+        bottom_right = nil,
+        top_left = { column = 58, row = 31 },
+        top_right = nil
+    },
+    {
+        bottom_left = { column = 58, row = 19 },
+        bottom_right = nil,
+        top_left = { column = 58, row = 23 },
+        top_right = nil
+    }
+}
+
+local controlRodGroupByName = {}
+
+for _, group in ipairs( controlRodGroups ) do
+    for _, position in ipairs( group ) do
+        local name = string.format( "%02d-%02d", position.column, position.row )
+        controlRodGroupByName[name] = group
+    end
+end
+
+BWR.ControlRodGroups = {
+    Groups = controlRodGroups,
+    ByName = controlRodGroupByName
+}

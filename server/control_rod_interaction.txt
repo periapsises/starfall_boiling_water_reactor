@@ -1,5 +1,8 @@
 --@server
 
+--@include control_rod_interaction/cri_rod_position_display.txt
+require( "control_rod_interaction/cri_rod_position_display.txt" )
+
 local floor, clamp = math.floor, math.clamp
 
 ControlRodInteraction = {}
