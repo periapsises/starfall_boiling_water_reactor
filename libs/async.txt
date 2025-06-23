@@ -16,6 +16,7 @@ local avgThreadMaxCpu = 0
 --- quota( percent )
 -- Yields from the current coroutine if the currently used quota exceeds a specific percentage of the max quota
 -- @param percent: A value between 0 and 1, 1 being 100% of the max quota
+---@diagnostic disable-next-line: lowercase-global
 function quota( percent )
     if max( qUse(), qAvg() ) >= qMax * percent then return yield() end
 end
@@ -71,6 +72,7 @@ end
 --- delay( time )
 -- Delays an async function for 'time' ms
 -- @param time: The time in milliseconds to delay for
+---@diagnostic disable-next-line: lowercase-global
 function delay( time )
     coroutine.wait( time * 0.001 )
 end
@@ -187,5 +189,11 @@ if SERVER then
 
     prop.createAsync = async( propCreateAsync )
 end
+
+--- requireAsync( path )
+-- Requires a file asynchroneously
+-- @param path: The path to the file to require
+---@diagnostic disable-next-line: lowercase-global
+requireAsync = async( require )
 
 return async, await, quota, delay
