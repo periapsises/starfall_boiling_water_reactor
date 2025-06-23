@@ -1,0 +1,129 @@
+--@server
+
+local function lVec( vec ) return chip():localToWorld( vec ) end
+local function lAng( ang ) return chip():localToWorldAngles( ang ) end
+
+local brightOrangeColor = Color( 255, 192, 64, 255 )
+local orangeColor = Color( 255, 128, 0, 255 )
+local darkOrangeColor = Color( 64, 32, 0, 255 )
+
+local numericScale = Vector( 0.1, 0.01, 0.1 )
+
+local numericDefaultModel = "models/sprops/misc/alphanum/alphanum_0.mdl"
+local numericModelFormat = "models/sprops/misc/alphanum/alphanum_%d.mdl"
+local numericDashModel = "models/sprops/misc/alphanum/alphanum_min.mdl"
+
+local numericDisplays = {}
+
+local function setNumber( self, number )
+    if number == nil then
+        self.left:setNoDraw( true )
+        self.right:setNoDraw( true )
+        return
+    end
+
+    self.left:setNoDraw( false )
+    self.right:setNoDraw( false )
+
+    if number == "--" then
+        self.left:setModel( numericDashModel )
+        self.left:setLocalPos( Vector( 0, 0.05, 0 ) )
+        self.right:setModel( numericDashModel )
+        self.right:setLocalPos( Vector( 0, 0.05, 0 ) )
+        return
+    end
+
+    local digits = string.split( string.format( "%02d", number ), "" )
+
+    local leftOffset = digits[1] == "1" and -0.29 or 0
+    self.left:setModel( numericModelFormat:format( digits[1] ) )
+    self.left:setLocalPos( Vector( leftOffset, 0.05, 0 ) )
+
+    local rightOffset = digits[2] == "1" and -0.29 or 0
+    self.right:setModel( numericModelFormat:format( digits[2] ) )
+    self.right:setLocalPos( Vector( rightOffset, 0.05, 0 ) )
+end
+
+local function setSelected( self, selected )
+    if selected then
+        self.left:setColor( brightOrangeColor )
+        self.right:setColor( brightOrangeColor )
+    else
+        self.left:setColor( orangeColor )
+        self.right:setColor( orangeColor )
+    end
+end
+
+local function initializeControlRodPositionDisplay()
+    for _, controlRodPositionDisplay in pairs( BWR.Json.Data.empty_data.FourRodDisplay ) do
+        local location = BWR.Json.Vector( controlRodPositionDisplay.location ) + Vector( 0, 0, 40 )
+        local angle = BWR.Json.Angle( controlRodPositionDisplay.rotation ) + Angle( 0, 180, 0 )
+
+        local leftNumericPosition = location + angle:getForward() * 0.5 + angle:getRight() * -0.05
+        local rightNumericPosition = location + angle:getForward() * -0.5 + angle:getRight() * -0.05
+        
+        local leftNumericBackground = hologram.create( lVec( leftNumericPosition ), lAng( angle ), numericDefaultModel, numericScale )
+        leftNumericBackground:setColor( darkOrangeColor )
+        leftNumericBackground:suppressEngineLighting( true )
+        leftNumericBackground:setMaterial( "models/debug/debugwhite" )
+        leftNumericBackground:setBodygroup( 0, 3 )
+        leftNumericBackground:setParent( chip() )
+
+        local rightNumericBackground = hologram.create( lVec( rightNumericPosition ), lAng( angle ), numericDefaultModel, numericScale )
+        rightNumericBackground:setColor( darkOrangeColor )
+        rightNumericBackground:suppressEngineLighting( true )
+        rightNumericBackground:setMaterial( "models/debug/debugwhite" )
+        rightNumericBackground:setBodygroup( 0, 3 )
+        rightNumericBackground:setParent( chip() )
+
+        local leftNumericForegroundPosition = leftNumericPosition + angle:getRight() * -0.05
+        local leftNumericForeground = hologram.create( lVec( leftNumericForegroundPosition ), lAng( angle ), numericDefaultModel, numericScale )
+        leftNumericForeground:setColor( orangeColor )
+        leftNumericForeground:suppressEngineLighting( true )
+        leftNumericForeground:setMaterial( "models/debug/debugwhite" )
+        leftNumericForeground:setBodygroup( 0, 3 )
+        leftNumericForeground:setParent( leftNumericBackground )
+
+        local rightNumericForegroundPosition = rightNumericPosition + angle:getRight() * -0.05
+        local rightNumericForeground = hologram.create( lVec( rightNumericForegroundPosition ), lAng( angle ), numericDefaultModel, numericScale )
+        rightNumericForeground:setColor( orangeColor )
+        rightNumericForeground:suppressEngineLighting( true )
+        rightNumericForeground:setMaterial( "models/debug/debugwhite" )
+        rightNumericForeground:setBodygroup( 0, 3 )
+        rightNumericForeground:setParent( rightNumericBackground )
+
+        table.insert( numericDisplays, {
+            left = leftNumericForeground,
+            right = rightNumericForeground,
+            setNumber = setNumber,
+            setSelected = setSelected
+        } )
+    end
+
+    local num = 0
+    timer.create( "cri_rod_position_display", 0.5, 0, function()
+        if num == 46 then num = 0 end
+
+        if num <= 42 then
+            for _, numericDisplay in pairs( numericDisplays ) do
+                numericDisplay:setNumber( num )
+            end
+        elseif num == 43 then
+            for _, numericDisplay in pairs( numericDisplays ) do
+                numericDisplay:setNumber( "--" )
+            end
+        elseif num == 44 then
+            for _, numericDisplay in pairs( numericDisplays ) do
+                numericDisplay:setSelected( true )
+            end
+        elseif num == 45 then
+            for _, numericDisplay in pairs( numericDisplays ) do
+                numericDisplay:setSelected( false )
+            end
+        end
+
+        num = num + 1
+    end )
+end
+
+hook.add( "JsonDataReceived", "InitializeControlRodPositionDisplay", initializeControlRodPositionDisplay )
