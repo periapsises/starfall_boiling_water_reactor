@@ -15,42 +15,72 @@ local numericDashModel = "models/sprops/misc/alphanum/alphanum_min.mdl"
 
 local numericDisplays = {}
 
-local function setNumber( self, number )
-    if number == nil then
+local function setText( self, text )
+    if type( text ) == "number" then
+        text = string.format( "%02d", text )
+    end
+
+    if text == self.currentText then return end
+    self.currentText = text
+
+    if text == "  " then
         self.left:setNoDraw( true )
         self.right:setNoDraw( true )
+        self.currentHidden = true
         return
+    elseif self.currentHidden then
+        self.left:setNoDraw( false )
+        self.right:setNoDraw( false )
+        self.currentHidden = false
     end
 
-    self.left:setNoDraw( false )
-    self.right:setNoDraw( false )
+    if text[1] == "1" and self.leftOffset == 0 then
+        self.leftOffset = -0.29
+        self.left:setLocalPos( Vector( self.leftOffset, 0.05, 0 ) )
+    end
 
-    if number == "--" then
+    if text[1] ~= "1" and self.leftOffset == -0.29 then
+        self.leftOffset = 0
+        self.left:setLocalPos( Vector( self.leftOffset, 0.05, 0 ) )
+    end
+
+    if text[2] == "1" and self.rightOffset == 0 then
+        self.rightOffset = -0.29
+        self.right:setLocalPos( Vector( self.rightOffset, 0.05, 0 ) )
+    end
+
+    if text[2] ~= "1" and self.rightOffset == -0.29 then
+        self.rightOffset = 0
+        self.right:setLocalPos( Vector( self.rightOffset, 0.05, 0 ) )
+    end
+
+    if text == "--" then
         self.left:setModel( numericDashModel )
-        self.left:setLocalPos( Vector( 0, 0.05, 0 ) )
         self.right:setModel( numericDashModel )
-        self.right:setLocalPos( Vector( 0, 0.05, 0 ) )
         return
     end
 
-    local digits = string.split( string.format( "%02d", number ), "" )
-
-    local leftOffset = digits[1] == "1" and -0.29 or 0
-    self.left:setModel( numericModelFormat:format( digits[1] ) )
-    self.left:setLocalPos( Vector( leftOffset, 0.05, 0 ) )
-
-    local rightOffset = digits[2] == "1" and -0.29 or 0
-    self.right:setModel( numericModelFormat:format( digits[2] ) )
-    self.right:setLocalPos( Vector( rightOffset, 0.05, 0 ) )
+    self.left:setModel( numericModelFormat:format( text[1] ) )
+    self.right:setModel( numericModelFormat:format( text[2] ) )
 end
 
 local function setSelected( self, selected )
+    if self.currentSelected == selected then return end
+
     if selected then
         self.left:setColor( brightOrangeColor )
         self.right:setColor( brightOrangeColor )
+        self.currentSelected = true
+
+        for _, numericDisplay in pairs( numericDisplays ) do
+            if numericDisplay ~= self then
+                numericDisplay:setSelected( false )
+            end
+        end
     else
         self.left:setColor( orangeColor )
         self.right:setColor( orangeColor )
+        self.currentSelected = false
     end
 end
 
@@ -61,7 +91,7 @@ local function initializeControlRodPositionDisplay()
 
         local leftNumericPosition = location + angle:getForward() * 0.5 + angle:getRight() * -0.05
         local rightNumericPosition = location + angle:getForward() * -0.5 + angle:getRight() * -0.05
-        
+
         local leftNumericBackground = hologram.create( lVec( leftNumericPosition ), lAng( angle ), numericDefaultModel, numericScale )
         leftNumericBackground:setColor( darkOrangeColor )
         leftNumericBackground:suppressEngineLighting( true )
@@ -95,35 +125,15 @@ local function initializeControlRodPositionDisplay()
         table.insert( numericDisplays, {
             left = leftNumericForeground,
             right = rightNumericForeground,
-            setNumber = setNumber,
-            setSelected = setSelected
+            setText = setText,
+            setSelected = setSelected,
+            currentText = "00",
+            currentSelected = false,
+            currentHidden = false,
+            leftOffset = 0,
+            rightOffset = 0
         } )
     end
-
-    local num = 0
-    timer.create( "cri_rod_position_display", 0.5, 0, function()
-        if num == 46 then num = 0 end
-
-        if num <= 42 then
-            for _, numericDisplay in pairs( numericDisplays ) do
-                numericDisplay:setNumber( num )
-            end
-        elseif num == 43 then
-            for _, numericDisplay in pairs( numericDisplays ) do
-                numericDisplay:setNumber( "--" )
-            end
-        elseif num == 44 then
-            for _, numericDisplay in pairs( numericDisplays ) do
-                numericDisplay:setSelected( true )
-            end
-        elseif num == 45 then
-            for _, numericDisplay in pairs( numericDisplays ) do
-                numericDisplay:setSelected( false )
-            end
-        end
-
-        num = num + 1
-    end )
 end
 
 hook.add( "JsonDataReceived", "InitializeControlRodPositionDisplay", initializeControlRodPositionDisplay )
